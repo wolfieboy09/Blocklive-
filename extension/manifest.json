@@ -21,7 +21,6 @@
         "service_worker":"background.js"
     },
     "permissions": [
-        "tabs",
         "storage"
     ],
     "optional_permissions":["notifications"],
