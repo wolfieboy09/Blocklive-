@@ -178,6 +178,7 @@ refreshUsername()
 // Listen for Project load
 let projectsPageTester = new RegExp('https://scratch.mit.edu/projects/*.')
 chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
+  console.log(changeInfo)
   if(changeInfo.url?.startsWith('https://scratch.mit.edu/')) {refreshUsername(true)}
   if(changeInfo.url) {
     await makeSureUsernameExists()
