@@ -220,7 +220,7 @@ chrome.runtime.onConnectExternal.addListener(function(port) {
     }
 
     console.log(msg)
-    if(msg.meta=="blockly.event" || msg.meta=="sprite.proxy"||msg.meta=="vm.blockListen"||msg.meta=="vm.shareBlocks" ||msg.meta=="vm.replaceBlocks" ||msg.meta=="vm.updateBitmap" ||msg.meta=='version++') {
+    if(msg.meta=="blockly.event" || msg.meta=="sprite.proxy"||msg.meta=="vm.blockListen"||msg.meta=="vm.shareBlocks" ||msg.meta=="vm.replaceBlocks" ||msg.meta=="vm.updateBitmap" ||msg.meta=="vm.updateSvg" ||msg.meta=='version++') {
       let blIdd = portIds[port.name]
       
       msg.user = uname

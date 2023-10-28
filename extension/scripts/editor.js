@@ -71,7 +71,7 @@ var isConnected = false;
 function liveMessage(message,res) {
     reconnectIfNeeded()
     let msg = message
-    if(msg.meta=="blockly.event" || msg.meta=="sprite.proxy"||msg.meta=="vm.blockListen"||msg.meta=="vm.shareBlocks" ||msg.meta=="vm.replaceBlocks" ||msg.meta=="vm.updateBitmap" ||msg.meta=="version++") {
+    if(msg.meta=="blockly.event" || msg.meta=="sprite.proxy"||msg.meta=="vm.blockListen"||msg.meta=="vm.shareBlocks" ||msg.meta=="vm.replaceBlocks" ||msg.meta=="vm.updateBitmap"||msg.meta=="vm.updateSvg" ||msg.meta=="version++") {
         blVersion++
     }
     port.postMessage(message,res)
@@ -314,8 +314,11 @@ setInterval(reconnectIfNeeded,1000)
                 replaceBlockly(msg)
             }
         } else if(msg.meta == 'vm.updateBitmap') { // TODO: Do this better-- pass in changes from bg script
-            await updateBitmap(msg)
             blVersion++;
+            await updateBitmap(msg)
+        } else if(msg.meta == 'vm.updateSvg') { // TODO: Do this better-- pass in changes from bg script
+            blVersion++;
+            await updateSvg(msg)
         } else if(msg.meta=='yourVersion') {
             console.log('version ponged: ' + msg.version)
             blVersion = msg.version
@@ -1072,9 +1075,9 @@ function onBlockRecieve(d) {
 }
 
 let oldTargUp = vm.emitTargetsUpdate.bind(vm)
-let etuListeners = []
+window.etuListeners = []
 vm.emitTargetsUpdate = function(...args) {
-    etuListeners.forEach(e=>e?.())
+    etuListeners.forEach(e=>{try{e?.()}catch(e){console.error(e)}})
     etuListeners = []
     if(pauseEventHandling) {return}
     else {oldTargUp(...args)}
@@ -1635,25 +1638,25 @@ vm.addCostume = proxy(vm.addCostume,"addcostume",
 //         args[1] = new ImageData(Uint8ClampedArray.from(Object.values(args[1].data)), data.extrargs.width, data.extrargs.height);
 //         return args
 //     })
-vm.updateSvg = editingProxy(vm.updateSvg,"updatesvg",null,(_a,_b,data)=>{
-    let costumeIndex = getSelectedCostumeIndex()
-    // console.log(data)
-    // update paint editor if reciever is editing the costume
-    // todo: instead of checking with vm.editingTarget, use _a or _b
-    if(targetToName(_a) == data.extrargs.target && costumeIndex != -1 && costumeIndex == data.args[0]) {
-        let costume = vm.editingTarget.getCostumes()[costumeIndex]
-        let paper = getPaper()
-        console.log('switching paper costume')
-        if(!paper) {return;}
-        paper.switchCostume(
-            costume.dataFormat,
-            costume.asset.decodeText(),
-            costume.rotationCenterX,
-            costume.rotationCenterY,
-            paper.props.zoomLevelId,
-            paper.props.zoomLevelId)
-    }
-})
+// vm.updateSvg = editingProxy(vm.updateSvg,"updatesvg",null,(_a,_b,data)=>{
+//     let costumeIndex = getSelectedCostumeIndex()
+//     // console.log(data)
+//     // update paint editor if reciever is editing the costume
+//     // todo: instead of checking with vm.editingTarget, use _a or _b
+//     if(targetToName(_a) == data.extrargs.target && costumeIndex != -1 && costumeIndex == data.args[0]) {
+//         let costume = vm.editingTarget.getCostumes()[costumeIndex]
+//         let paper = getPaper()
+//         console.log('switching paper costume')
+//         if(!paper) {return;}
+//         paper.switchCostume(
+//             costume.dataFormat,
+//             costume.asset.decodeText(),
+//             costume.rotationCenterX,
+//             costume.rotationCenterY,
+//             paper.props.zoomLevelId,
+//             paper.props.zoomLevelId)
+//     }
+// })
 let oldUpdateBitmap = vm.updateBitmap
 vm.updateBitmap = (...args)=>{
     // args: costumeIndex, bitmap, rotationCenterX, rotationCenterY, bitmapResolution
@@ -1736,6 +1739,93 @@ async function updateBitmap(msg) {
     //     [costume.rotationCenterX / msg.bitmapResolution, costume.rotationCenterY / msg.bitmapResolution]
     // );
 }
+
+
+
+
+
+
+
+
+
+let oldUpdateSvg = vm.updateSvg
+vm.updateSvg = (...args)=>{
+
+    console.log('updateSvg args:',args)
+    // args: costumeIndex, bitmap, rotationCenterX, rotationCenterY, bitmapResolution
+    oldUpdateSvg.bind(vm)(...args);
+
+// vm runs emitTargetsUpdate after creating new asset
+{(async()=>{
+    let target = BL_UTILS.targetToName(vm.editingTarget);
+
+    let costumeIndex = args[0]
+    let costume = vm.editingTarget.getCostumes()[costumeIndex];
+    let sendCostume = JSON.parse(JSON.stringify(costume))
+    delete sendCostume.asset
+    console.log(costume)
+    let asset = costume.asset;
+
+    // send costume to scratch servers
+    let stored = await vm.runtime.storage.store(asset.assetType,asset.dataFormat,asset.data,asset.assetId);
+    // get costume info to send
+
+    liveMessage({meta:'vm.updateSvg',costume:sendCostume,target,costumeIndex,assetType:asset.assetType})
+})()}
+
+}
+async function updateSvg(msg) {
+    console.log(msg)
+    console.log(msg.costume.assetId)
+    let target = BL_UTILS.nameToTarget(msg.target)
+    let costume = target.getCostumes()[msg.costumeIndex]
+    asset = await vm.runtime.storage.load(msg.assetType,msg.costume.assetId,msg.costume.dataFormat)
+
+    costume.asset = asset
+    Object.entries(msg.costume).forEach(entry=>{
+        costume[entry[0]] = entry[1]
+    })
+
+    vm.emitTargetsUpdate()
+
+    // update skin
+    window.ayy = costume.asset.data
+    if (vm?.runtime?.renderer) {
+        // costume data to xml svg dom text
+        let svg = String.fromCharCode.apply(null, costume.asset.data);
+        vm.runtime.renderer.updateSVGSkin(costume.skinId, svg, [costume.rotationCenterX, costume.rotationCenterY]);
+    }
+
+    // update paper 
+    let selectedCostumeIndex = getSelectedCostumeIndex()
+    if(BL_UTILS.targetToName(vm.editingTarget) == msg.target && selectedCostumeIndex != -1 && msg.costumeIndex == selectedCostumeIndex) {
+        let costume = vm.editingTarget.getCostumes()[msg.costumeIndex]
+        let paper = getPaper()
+        console.log('switching paper costume')
+        if(!paper) {return;}
+        paper.switchCostume(
+            costume.dataFormat,
+            costume.asset.encodeDataURI(),
+            costume.rotationCenterX,
+            costume.rotationCenterY,
+            paper.props.zoomLevelId,
+            paper.props.zoomLevelId)
+    }
+
+    // update renderer costume skins [VERY IMPORTANT FOR RENDER!]
+    // await BL_load_costume.loadCostume(costume.md5,costume,vm.runtime)
+    target.updateAllDrawableProperties()
+}
+
+
+
+
+
+
+
+
+
+
 // vm.updateBitmap = proxy(vm.updateBitmap,"updatebit",null,null,null,()=>{vm.emitTargetsUpdate();vm.emitWorkspaceUpdate()})
 // vm.updateSvg = proxy(vm.updateSvg,"updatesvg",null,null,null,()=>{vm.emitTargetsUpdate();vm.emitWorkspaceUpdate()})
 newTargetEvents = {} // targetName => [events...] //todo make let statement
@@ -3295,3 +3385,6 @@ function backspaceFix() {
         }
     })
 }
+
+
+///////// revert projects /////////

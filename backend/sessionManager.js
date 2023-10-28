@@ -47,15 +47,15 @@ class BlockliveProject {
     }
 
     recordChange(change) {
-        this.trimBitmapChanges(change)
+        this.trimCostumeEdits(change)
         this.changes.push(change)
         this.version++;
         this.lastTime = Date.now()
     }
 
-    // removes previous bitmap updates of same sprite to save loading time
-    trimBitmapChanges(newchange) {
-        if(newchange.meta == "vm.updateBitmap") {
+    // removes previous bitmap/svg updates of same sprite to save loading time
+    trimCostumeEdits(newchange) {
+        if(newchange.meta == "vm.updateBitmap" || newchange.meta == "vm.updateSvg") {
             let target = newchange.target
             let costumeIndex = newchange.costumeIndex
             let limit = 20;
@@ -63,7 +63,7 @@ class BlockliveProject {
                 let change = this.changes[i];
                 let spn = change?.data?.name
                 if(spn == "reordercostume" || spn == 'renamesprite') {break}
-                if(change.meta == "vm.updateBitmap" && change.target == target && change.costumeIndex == costumeIndex) {
+                if((change.meta == "vm.updateBitmap" || change.meta == "vm.updateSvg") && change.target == target && change.costumeIndex == costumeIndex) {
                     this.changes[i] = {meta:'version++'}
                 }
             }
