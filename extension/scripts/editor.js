@@ -2102,7 +2102,7 @@ function outlineBlock(blockId, username) {
 /////........................ GUI INJECTS .........................//////
 console.log('running gui inject...')
 let shareDropdown = `
-<container style="width:200px; row-gap: 5px; display:flex;flex-direction:column;background-color: #4d97ff;padding:10px; border-radius: 17px;">
+<container style="width:200px; row-gap: 5px; display:flex;flex-direction:column;background-color: hsla(260, 60%, 60%, 1);padding:10px; border-radius: 17px;">
 <div  style="color:white;font-weight:normal;font-face='Helvetica Neue','Helvetica',Arial,sans-serif">   
 <sharedWith style="display:flex;flex-direction: column;">
         <text style="display:flex;align-self: left;padding-left:4px; padding-top:5px;padding-bottom:5px;font-size: large;">
@@ -2125,7 +2125,7 @@ let shareDropdown = `
     <search style="display:flex;flex-direction: column; ">
         <text style="display:flex;flex-direction:column;align-self:  left;padding-top:5px;padding-bottom:5px;padding-left:4px; font-size: large;">
             Add Collaborators
-            <textt style="font-size:small; color:#b4d4ff; font-style:italic">Friends must add you on their list</textt>
+            <textt style="font-size:small; color:#ffffffb3; font-style:italic">Friends must add you on their list</textt>
             </text>
         <input id='searchy' style="color:black; display: flex;  margin-bottom:10px; align-self: center;border-radius: 10px; border-style: none; width:190px; height:30px">
 
@@ -2137,7 +2137,7 @@ let shareDropdown = `
 
                 </highlight> -->
                 <pic id="resultPic" style='pointer-events:none;z-index: 1;width:40px; height:40px; border-radius: 100%; display:flex;background-position: center;background-size:cover;';>
-                    <x id='plus' style="z-index: 1; color:rgb(9, 79, 136);margin-left:10px;display:flex; width:30px; border-radius: 100%;padding: 2px;font-weight: bold;font-size: x-large;">
+                    <x id='plus' style="z-index: 1; color:rgb(69, 35, 136);margin-left:10px;display:flex; width:30px; border-radius: 100%;padding: 2px;font-weight: bold;font-size: x-large;">
                         +
                    </x>
                 </pic>
@@ -2213,7 +2213,7 @@ let shareCSS = `
 }
 
 .result:hover {
-background: #6aa8ff;
+    background: rgba(255,255,255,0.2);
 }
 .blockliveloader {
     border: 3px solid rgba(255,0,113,1);
