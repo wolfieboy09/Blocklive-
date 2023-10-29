@@ -1622,6 +1622,28 @@ vm.addCostume = proxy(vm.addCostume,"addcostume",
         return ret
     }
 )
+
+vm.addBackdrop = proxy(vm.addBackdrop,"addbackdrop",
+    null,
+    (data)=>{
+        let ret = [data.args[0],data.args[1]]
+        if(ret[1]?.asset?.data) {
+            // adapted from scratch source 'file-uploader'
+            ret[1].asset = vm.runtime.storage.createAsset(
+                ret[1].asset.assetType, 
+                ret[1].asset.dataFormat,
+                Uint8Array.from(Object.values(ret[1].asset.data)),null,true);
+            ret[1] = {
+                name: null,
+                dataFormat: ret[1].asset.dataFormat,
+                asset: ret[1].asset,
+                md5: `${ret[1].asset.assetId}.${ret[1].asset.dataFormat}`,
+                assetId: ret[1].asset.assetId
+            };
+        }
+        return ret
+    }
+)
 // vm.updateBitmap = editingProxy(vm.updateBitmap,"updatebitmap",null,(_a,_b,data)=>{
 //     let costumeIndex = getSelectedCostumeIndex()
 //     // console.log(data)
