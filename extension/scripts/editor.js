@@ -1811,10 +1811,9 @@ async function updateSvg(msg) {
     vm.emitTargetsUpdate()
 
     // update skin
-    window.ayy = costume.asset.data
     if (vm?.runtime?.renderer) {
         // costume data to xml svg dom text
-        let svg = String.fromCharCode.apply(null, costume.asset.data);
+        let svg = new TextDecoder().decode(costume.asset.data);
         vm.runtime.renderer.updateSVGSkin(costume.skinId, svg, [costume.rotationCenterX, costume.rotationCenterY]);
     }
 
