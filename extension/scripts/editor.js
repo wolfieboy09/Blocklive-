@@ -1805,6 +1805,7 @@ async function updateSvg(msg) {
 
     costume.asset = asset
     Object.entries(msg.costume).forEach(entry=>{
+        if(entry[0]=='skinId'){return}
         costume[entry[0]] = entry[1]
     })
 
