@@ -111,7 +111,7 @@ const socket = io.connect(apiUrl,{jsonp:false,transports:['websocket', 'xhr-poll
 console.log('connecting')
 socket.on('connect',async ()=>{
   console.log('connected with id: ',socket.id)
-  ports.forEach(port=>port.postMessage('resync'))
+  ports.forEach(port=>port.postMessage({meta:'resync'}))
   let blIds = Object.keys(blockliveTabs) 
   if(blIds.length != 0) {socket.send({type:'joinSessions',username:await makeSureUsernameExists(),pk:upk,ids:blIds})}
 })
