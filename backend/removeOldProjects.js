@@ -28,6 +28,8 @@ function removeOldProjectsAsync(sessionManager, userManager) {
                     if (Object.keys(project.session.connectedClients).length == 0) {
                         if (project.project.lastTime && Date.now() - new Date(project.project.lastTime) > HOW_OLD_DAYS * 24 * 60 * 60 * 1000) {
 
+                            console.log(`deleting project ${id} because it is old`);
+
                             [project.owner, ...project.sharedWith].forEach(username => {
                                 userManager.unShare(username, id);
                                 sessionManager.unshareProject(id, username)
@@ -36,7 +38,7 @@ function removeOldProjectsAsync(sessionManager, userManager) {
                             sessionManager.deleteProjectFile(id);
                         } else {
                             project.project.trimChanges(20)
-                            this.offloadProjectAsync(id)
+                            sessionManager.offloadProjectAsync(id)
                         }
                     }
                 }
