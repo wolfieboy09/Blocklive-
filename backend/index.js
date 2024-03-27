@@ -41,6 +41,7 @@ import sanitize from 'sanitize-filename';
 import { blocklivePath, lastIdPath, loadMapFromFolder, saveMapToFolder, saveMapToFolderAsync, scratchprojectsPath, usersPath} from './filesave.js'
 import { Filter } from './profanity-filter.js';
 import { postText } from './discord-webhook.js';
+import { installCleaningJob } from './removeOldProjects.js';
 // Load session and user manager objects
 
 
@@ -107,6 +108,7 @@ async function saveLoop() {
      }
 }
 saveLoop()
+installCleaningJob(sessionManager,userManager)
 
 const filter = new Filter()
 filter.loadDefault()
@@ -180,7 +182,8 @@ io.on('connection', (client) => {
      client.on("message",(data,callback)=>{
           // console.log('message recieved',data,'from: ' + client.id)
           if(data.type in messageHandlers) {
-               messageHandlers[data.type](data,client,callback)
+               try{messageHandlers[data.type](data,client,callback)}
+               catch(e){console.error('error during messageHandler',e)}
           } else {console.log('discarded unknown mesage type: ' + data.type)}
      })
 

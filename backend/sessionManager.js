@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path, { sep } from 'path';
 import sanitize from 'sanitize-filename';
-import { blocklivePath, saveMapToFolder, saveMapToFolderAsync } from './filesave.js';
+import { blocklivePath, saveMapToFolder, saveMapToFolderAsync, scratchprojectsPath } from './filesave.js';
 import {Blob} from 'node:buffer'
 
 class BlockliveProject {
@@ -369,7 +369,9 @@ export default class SessionManager{
             console.log('offloading project ' + id)
             let toSaveBlocklive = {}
             toSaveBlocklive[id] = this.blocklive[id]
-            saveMapToFolder(toSaveBlocklive,blocklivePath);
+            if(toSaveBlocklive[id]) { // only save it if there is actual data to save
+                saveMapToFolder(toSaveBlocklive,blocklivePath);
+            }
             delete this.blocklive[id]
         } catch (e) {console.error(e)}
     }
@@ -487,7 +489,7 @@ export default class SessionManager{
         project.linkedWith.filter(proj=>(proj.owner.toLowerCase() == user.toLowerCase())).forEach(proj=>{
             project.linkedWith.splice(project.linkedWith.indexOf(proj))
             delete this.scratchprojects[proj.scratchId]
-            let projectPatch = 'scratchprojects' + path.sep + sanitize(proj.scratchId + '');
+            let projectPatch = scratchprojectsPath + path.sep + sanitize(proj.scratchId + '');
             if(fs.existsSync(projectPatch)) {
                 try{ fs.rmSync(projectPatch) } catch(e){console.error(e)} 
             }
@@ -496,12 +498,25 @@ export default class SessionManager{
         if(project.owner.toLowerCase() == user.toLowerCase()) {
             project.owner = project.sharedWith[0] ? project.sharedWith[0] : '';
         }
-        
+
         let userIndex = project.sharedWith.indexOf(user)
         if(userIndex != -1) {
             project.sharedWith.splice(userIndex,1)
         }
+
+        // delete the project file if no-one owns it
+        if(project.onwer == '') {
+            this.deleteProjectFile(project.id)
+        }
         // TODO: Handle what-if their project is the inpoint?
+    }
+
+    deleteProjectFile(id) {
+        this.offloadProject(id)
+        let projectPath = blocklivePath + path.sep + sanitize(id)
+        if(fs.existsSync(projectPath)) {
+            try{ fs.rmSync(projectPath) } catch(e){console.error('error when deleting project file after unsharing with everyone',e)} 
+        }
     }
 
     getScratchToBLProject(scratchId) {
