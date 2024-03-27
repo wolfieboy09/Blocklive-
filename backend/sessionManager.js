@@ -126,6 +126,7 @@ class BlockliveSess {
         this.getWonkySockets()
     }
     removeClient(id) {
+        console.log(`deleting 🚮 project file with id ${id}`)
         let username = this.connectedClients[id]?.username
         delete this.connectedClients[id]
         return username
