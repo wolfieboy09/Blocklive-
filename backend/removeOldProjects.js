@@ -1,4 +1,4 @@
-import { blocklivePath, lastIdPath, loadMapFromFolder, saveMapToFolder, saveMapToFolderAsync, scratchprojectsPath, usersPath} from './filesave.js'
+import { blocklivePath } from './filesave.js'
 import fs from 'fs'
 import cron from 'node-cron'
 
@@ -13,6 +13,7 @@ const CRON_EXPRESSION = '0 2 * * *'; // every night at 2am
 function removeOldProjectsAsync(sessionManager, userManager) {
     fs.readdir(blocklivePath,(files=>{
         for (id in files) {
+            console.log('probing project with id ' + id)
             let project = sessionManager.getProject(id)
             id=project.id;
             if(!project) { sessionManager.deleteProjectFile(id); return;} //todo check if project not existing messes up delete function
