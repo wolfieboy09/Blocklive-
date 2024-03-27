@@ -126,7 +126,6 @@ class BlockliveSess {
         this.getWonkySockets()
     }
     removeClient(id) {
-        console.log(`deleting 🚮 project file with id ${id}`)
         let username = this.connectedClients[id]?.username
         delete this.connectedClients[id]
         return username
@@ -513,6 +512,8 @@ export default class SessionManager{
     }
 
     deleteProjectFile(id) {
+        console.log(`deleting 🚮 project file with id ${id}`)
+
         this.offloadProject(id)
         let projectPath = blocklivePath + path.sep + sanitize(id)
         if(fs.existsSync(projectPath)) {
