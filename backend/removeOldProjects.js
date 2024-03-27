@@ -15,13 +15,15 @@ function removeOldProjectsAsync(sessionManager, userManager) {
     fs.readdir(blocklivePath,(err,files)=>{
         console.log('removal test started', files)
         for (let id of files) {
+
+            try{
             console.log('probing project with id ' + id)
             let project = sessionManager.getProject(id)
             if(!project) { sessionManager.deleteProjectFile(id); return;} //todo check if project not existing messes up delete function
             id=project.id; // since we know that project.id exists
             
             if(Object.keys(project.session.connectedClients).length == 0) {
-                if(Date.now()-new Date(project.project.lastTime) > HOW_OLD_DAYS * 24 * 60 * 60 * 1000){
+                if(project.project.lastTime && Date.now()-new Date(project.project.lastTime) > HOW_OLD_DAYS * 24 * 60 * 60 * 1000){
 
                     [project.owner,...project.sharedWith].forEach(username=>{
                         userManager.unShare(username,id);
@@ -34,7 +36,10 @@ function removeOldProjectsAsync(sessionManager, userManager) {
                     this.offloadProjectAsync(id)
                 }
             }
-
+        } 
+        catch(e) {
+            console.error(`error while probing project ${id}:`,e)
+        }
         }
     })
 }
