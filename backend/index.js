@@ -108,7 +108,7 @@ async function saveLoop() {
      }
 }
 saveLoop()
-installCleaningJob(sessionManager,userManager)
+// installCleaningJob(sessionManager,userManager)
 
 const filter = new Filter()
 filter.loadDefault()

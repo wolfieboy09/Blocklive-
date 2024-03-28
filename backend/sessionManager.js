@@ -402,8 +402,8 @@ export default class SessionManager{
                 console.log('reloaded blocklive ' + id)
             } catch (e) {
                 // if(!id) {return}
-                fs.closeSync(d)
                 console.error("reloadProject: couldn't read project with id: " + id + ". err msg: ", e)
+                fs.closeSync(d)
             }
         }
     }
