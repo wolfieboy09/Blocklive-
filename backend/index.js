@@ -92,6 +92,7 @@ function save() {
      saveMapToFolder(userManager.users,usersPath);
 }
 async function saveAsync() {
+     console.log('saving now...')
      await sessionManager.offloadStaleProjectsAsync();
      await saveMapToFolderAsync(sessionManager.blocklive,blocklivePath);
      await saveMapToFolderAsync(sessionManager.scratchprojects,scratchprojectsPath);
