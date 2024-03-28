@@ -23,12 +23,19 @@ export function saveMapToFolder(obj, dir) {
     if (!fs.existsSync(dir)){fs.mkdirSync(dir,{recursive:true})}
     let promises = []
     Object.entries(obj).forEach(entry=>{
+     let stringg = JSON.stringify(entry[1])
+     if(stringg.length >= maxStringWriteLength && entry[1]?.project?.changes) {
+          entry[1] = {...entry[1]}
+          entry[1].project.changes=[]
+          stringg = JSON.stringify(entry[1])
+     } //max length is 524288
+
          entry[0] = sanitize(entry[0] + '')
-         if(entry[0] == '') {return}
+         if(entry[0] == '' || stringg.length > maxStringWriteLength) {return}
          let fd=null;
          try{
                let fd = fs.openSync(dir+path.sep+entry[0],'w')
-               fs.writeFileSync(fd,JSON.stringify(entry[1]));
+               fs.writeFileSync(fd,stringg);
                fs.closeSync(fd)
          } catch (e) {
               console.error('Error when saving filename: ' + entry[0])
@@ -37,6 +44,8 @@ export function saveMapToFolder(obj, dir) {
          }
     })
 }
+
+const maxStringWriteLength = 514288;
 export async function saveMapToFolderAsync(obj, dir) {
      // if obj is null, return
      if(!obj) {console.warn('tried to save null object to dir: ' + dir); return}
@@ -44,10 +53,17 @@ export async function saveMapToFolderAsync(obj, dir) {
      if (!fs.existsSync(dir)){fs.mkdirSync(dir,{recursive:true})}
      let promises = []
      for (let entry of Object.entries(obj)) {
+          let stringg = JSON.stringify(entry[1]);
+          if(stringg.length >= maxStringWriteLength && entry[1]?.project?.changes) {
+               entry[1] = {...entry[1]}
+               entry[1].project.changes=[]
+               stringg = JSON.stringify(entry[1])
+          } //max length is 524288
+
           entry[0] = sanitize(entry[0] + '')
-          if(entry[0] == '') {return}
+          if(entry[0] == '' || stringg.length >= maxStringWriteLength) {return}
           let file = await fsp.open(dir+path.sep+entry[0],'w')
-          await fsp.writeFile(file,JSON.stringify(entry[1])).catch(e=>{console.error('Error when saving filename:'),console.error(e)});
+          await fsp.writeFile(file,stringg).catch(e=>{console.error('Error when saving filename:'),console.error(e)});
           await file.close()
      }
  }
