@@ -46,7 +46,7 @@ export async function saveMapToFolderAsync(obj, dir) {
      for (let entry of Object.entries(obj)) {
           entry[0] = sanitize(entry[0] + '')
           if(entry[0] == '') {return}
-          let file = await fsp.open(dir+path.sep+entry[0])
+          let file = await fsp.open(dir+path.sep+entry[0],'w')
           await fsp.writeFile(file,JSON.stringify(entry[1])).catch(e=>{console.error('Error when saving filename:'),console.error(e)});
           await file.close()
      }
