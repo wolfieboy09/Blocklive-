@@ -20,8 +20,9 @@ function removeOldProjectsAsync(sessionManager, userManager) {
                 console.log('probing project with id ' + id)
                 let project = sessionManager.getProject(id)
                 if (!project) { 
-                    console.log('project doesnt exist, id ' + id)
-                    sessionManager.deleteProjectFile(id);} //todo check if project not existing messes up delete function
+                    console.log('project doesnt exist, DELETING id ' + id)
+                    // sessionManager.deleteProjectFile(id);
+                } //todo check if project not existing messes up delete function
                 else { // if project does exist
                     id = project.id; // since we know that project.id exists
 
