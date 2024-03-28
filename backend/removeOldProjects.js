@@ -3,6 +3,10 @@ import fs from 'fs'
 import cron from 'node-cron'
 import { sep } from 'path';
 
+function sleep(millis) {
+    return new Promise(res=>setTimeout(res,millis))
+}
+
 export function installCleaningJob(sessionManager, userManager) {
     removeOldProjectsAsync(sessionManager, userManager);
     cron.schedule(CRON_EXPRESSION, () => removeOldProjectsAsync(sessionManager, userManager))
@@ -15,8 +19,9 @@ function removeOldProjectsAsync(sessionManager, userManager) {
     fs.readdir(blocklivePath, async (err, files) => {
         console.log('removal test started', files)
         for (let id of files) {
-
+            await sleep(100) // rate limit might fix issues??????? IM LOSSTTTTTTTT!!!
             try {
+
                 console.log('probing project with id ' + id)
                 let project = sessionManager.getProject(id)
                 if (!project) { 
