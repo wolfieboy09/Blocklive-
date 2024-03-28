@@ -1,3 +1,5 @@
+/// for some reason this causes a ton of issues :/
+
 import { blocklivePath } from './filesave.js'
 import fs from 'fs'
 import cron from 'node-cron'
@@ -15,7 +17,7 @@ export function installCleaningJob(sessionManager, userManager) {
 const HOW_OLD_DAYS = 60; // delete projects with no new edits in the last this number of days
 const CRON_EXPRESSION = '0 2 * * *'; // every night at 2am
 
-function removeOldProjectsAsync(sessionManager, userManager) {
+async function removeOldProjectsAsync(sessionManager, userManager) {
     fs.readdir(blocklivePath, async (err, files) => {
         console.log('removal test started', files)
         for (let id of files) {

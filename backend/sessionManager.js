@@ -381,7 +381,9 @@ export default class SessionManager{
             console.log('offloading project ' + id)
             let toSaveBlocklive = {}
             toSaveBlocklive[id] = this.blocklive[id]
-            await saveMapToFolderAsync(toSaveBlocklive,blocklivePath);
+            if(toSaveBlocklive[id]) { // only save it if there is actual data to save
+                await saveMapToFolderAsync(toSaveBlocklive,blocklivePath);
+            }
             delete this.blocklive[id]
         } catch (e) {console.error(e)}
     }
