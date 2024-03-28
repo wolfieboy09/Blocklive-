@@ -45,7 +45,7 @@ export async function saveMapToFolderAsync(obj, dir) {
           entry[0] = sanitize(entry[0] + '')
           if(entry[0] == '') {return}
           let descriptor = await fsp.open(dir+path.sep+entry[0])
-          await fsp.writeFile(descriptor,JSON.stringify(entry[1])).catch(e=>console.error('Error when saving filename: ' + e));
+          await fsp.writeFile(descriptor,JSON.stringify(entry[1])).catch(e=>console.error('Error when saving filename: ', e));
           fs.close(descriptor);
      }
  }

@@ -395,7 +395,6 @@ export default class SessionManager{
                 d = fs.openSync(blocklivePath + path.sep + id, 'r')
                 let file = fs.readFileSync(d).toString()
                 fs.closeSync(d)
-                fs.close(d)
 
                 let json = JSON.parse(file)
                 let project = ProjectWrapper.fromJSON(json);
@@ -404,7 +403,6 @@ export default class SessionManager{
             } catch (e) {
                 // if(!id) {return}
                 fs.closeSync(d)
-                fs.close(d)
                 console.error("reloadProject: couldn't read project with id: " + id + ". err msg: ", e)
             }
         }
