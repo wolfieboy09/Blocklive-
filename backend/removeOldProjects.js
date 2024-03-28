@@ -18,7 +18,7 @@ function removeOldProjectsAsync(sessionManager, userManager) {
 
             try {
                 console.log('probing project with id ' + id)
-                let project = sessionManager.getProject(id)
+                let project = await sessionManager.getProjectAsync(id)
                 if (!project) { 
                     console.log('project doesnt exist, DELETING id ' + id)
                     // sessionManager.deleteProjectFile(id);

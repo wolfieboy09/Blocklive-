@@ -1,4 +1,5 @@
 import fs from 'fs'
+import fsp from 'fs/promises'
 import path, { sep } from 'path';
 import sanitize from 'sanitize-filename';
 import { blocklivePath, saveMapToFolder, saveMapToFolderAsync, scratchprojectsPath } from './filesave.js';
@@ -402,6 +403,24 @@ export default class SessionManager{
             }
         }
     }
+    async reloadProjectAsync(id) {
+
+        id = sanitize(id + '')
+        if(!(id in this.blocklive)) {
+            try {
+                
+                let file = await fsp.readFile(blocklivePath + path.sep + id)
+
+                let json = JSON.parse(file)
+                let project = ProjectWrapper.fromJSON(json);
+                this.blocklive[id] = project
+                console.log('reloaded blocklive ' + id)
+            } catch (e) {
+                // if(!id) {return}
+                console.error("reloadProject: couldn't read project with id: " + id + ". err msg: ", e)
+            }
+        }
+    }
 
     linkProject(id,scratchId,owner,version) {
         let project = this.getProject(id)
@@ -477,6 +496,10 @@ export default class SessionManager{
 
     getProject(blId) {
         this.reloadProject(blId)
+        return this.blocklive[blId]
+    }
+    async getProjectAsync(blId) { // untested attempt to avoid too many files open in node version 17.9.1
+        await this.reloadProject(blId)
         return this.blocklive[blId]
     }
     shareProject(id,user,pk) {
