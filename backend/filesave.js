@@ -2,6 +2,7 @@ import fs from 'fs'
 import fsp from 'fs/promises'
 import path from 'path';
 import sanitize from 'sanitize-filename';
+import clone from 'clone'
 
 export const blocklivePath = 'storage/sessions/blocklive'
 export const scratchprojectsPath = 'storage/sessions/scratchprojects'
@@ -25,7 +26,7 @@ export function saveMapToFolder(obj, dir) {
     Object.entries(obj).forEach(entry=>{
      let stringg = JSON.stringify(entry[1])
      if(stringg.length >= maxStringWriteLength && entry[1]?.project?.changes) {
-          entry[1] = {...entry[1]}
+          entry[1] = clone(entry[1],true,2)
           entry[1].project.changes=[]
           stringg = JSON.stringify(entry[1])
      } //max length is 524288
@@ -55,7 +56,7 @@ export async function saveMapToFolderAsync(obj, dir) {
      for (let entry of Object.entries(obj)) {
           let stringg = JSON.stringify(entry[1]);
           if(stringg.length >= maxStringWriteLength && entry[1]?.project?.changes) {
-               entry[1] = {...entry[1]}
+               entry[1] = clone(entry[1],true,2)
                entry[1].project.changes=[]
                stringg = JSON.stringify(entry[1])
           } //max length is 524288
