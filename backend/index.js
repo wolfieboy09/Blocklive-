@@ -108,7 +108,7 @@ async function saveLoop() {
      }
 }
 saveLoop()
-// installCleaningJob(sessionManager,userManager)
+setTimeout(()=>installCleaningJob(sessionManager,userManager),1000 * 10)
 
 const filter = new Filter()
 filter.loadDefault()
