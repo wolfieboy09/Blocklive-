@@ -435,8 +435,8 @@ console.log('listening on port ' + port)
 
 process.stdin.resume();//so the program will not close instantly
 
-function exitHandler(options, exitCode) {
-     save();
+async function exitHandler(options, exitCode) {
+     await saveAsync();
     if (options.cleanup) console.log('clean');
     if (exitCode || exitCode === 0) console.log(exitCode);
     if (options.exit) process.exit();

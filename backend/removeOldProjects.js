@@ -12,7 +12,7 @@ const HOW_OLD_DAYS = 60; // delete projects with no new edits in the last this n
 const CRON_EXPRESSION = '0 2 * * *'; // every night at 2am
 
 function removeOldProjectsAsync(sessionManager, userManager) {
-    fs.readdir(blocklivePath, (err, files) => {
+    fs.readdir(blocklivePath, async (err, files) => {
         console.log('removal test started', files)
         for (let id of files) {
 
