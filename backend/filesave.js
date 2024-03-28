@@ -62,7 +62,8 @@ export function loadMapFromFolder(dir) {
                    obj[entry[0]] = JSON.parse(entry[1]) // parse file to object
               } catch (e) {
                    console.error('json parse error on file: ' + dir + path.sep + "\x1b[1m" /* <- bold */ + entry[0] + "\x1b[0m" /* <- reset */)
-              }
+                    fs.rmSync(dir + path.sep + entry[0])
+               }
     })
     return obj
 }
