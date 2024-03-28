@@ -25,13 +25,15 @@ export function saveMapToFolder(obj, dir) {
     Object.entries(obj).forEach(entry=>{
          entry[0] = sanitize(entry[0] + '')
          if(entry[0] == '') {return}
+         let fd=null;
          try{
-               let fd = fs.openSync(dir+path.sep+entry[0])
+               let fd = fs.openSync(dir+path.sep+entry[0],'w')
                fs.writeFileSync(fd,JSON.stringify(entry[1]));
                fs.closeSync(fd)
          } catch (e) {
               console.error('Error when saving filename: ' + entry[0])
               console.error(e)
+              if(fd) {fs.closeSync(fd)}
          }
     })
 }
