@@ -21,7 +21,7 @@ async function removeOldProjectsAsync(sessionManager, userManager) {
     fs.readdir(blocklivePath, async (err, files) => {
         console.log('removal test started', files)
         for (let id of files) {
-            await sleep(100) // rate limit might fix issues??????? IM LOSSTTTTTTTT!!!
+            // await sleep(100) // rate limit might fix issues??????? IM LOSSTTTTTTTT!!!
             try {
 
                 console.log('probing project with id ' + id)
