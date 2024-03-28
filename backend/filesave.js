@@ -27,6 +27,7 @@ export function saveMapToFolder(obj, dir) {
          if(entry[0] == '') {return}
          try{
               fs.writeFileSync(dir+path.sep+entry[0],JSON.stringify(entry[1]));
+              fs.closeSync(dir+path.sep+entry[0])
          } catch (e) {
               console.error('Error when saving filename: ' + entry[0])
               console.error(e)
@@ -43,6 +44,7 @@ export async function saveMapToFolderAsync(obj, dir) {
           entry[0] = sanitize(entry[0] + '')
           if(entry[0] == '') {return}
           await fsp.writeFile(dir+path.sep+entry[0],JSON.stringify(entry[1])).catch(e=>console.error('Error when saving filename: ' + e));
+          fs.close(dir+path.sep+entry[0]);
      }
  }
 export function loadMapFromFolder(dir) {
