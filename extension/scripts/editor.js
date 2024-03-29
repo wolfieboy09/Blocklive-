@@ -2793,7 +2793,7 @@ function addRevertButton() {
 
 
 function revertProject() {
-    let conf = window.confirm("Blocklive Revert:\nThis will delete recent blocklive edits and reset the project to the version previously saved in your mystuff. Click 'save now' to save the revert.\nClick Cancel to cancel")
+    let conf = window.confirm("Blocklive Revert:\nThis will delete recent blocklive edits and reset the project to the version that was saved in your mystuff before you opened it. \n - Use this if you think blocklive broke your project\n - You'll still have to click 'Save Now' to finalize the revert.\n\nClick OK to revert\nClick Cancel to cancel")
     if(!conf) {return}
 
     vm.loadProject(revertJSON)
