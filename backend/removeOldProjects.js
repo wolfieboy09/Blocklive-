@@ -1,17 +1,28 @@
 /// for some reason this causes a ton of issues :/
 
-import { blocklivePath } from './filesave.js'
+import { blocklivePath, scratchprojectsPath } from './filesave.js'
 import fs from 'fs'
 import cron from 'node-cron'
 import { sep } from 'path';
 
 function sleep(millis) {
-    return new Promise(res=>setTimeout(res,millis))
+    return new Promise(res => setTimeout(res, millis))
 }
 
+let inprog=false;
 export function installCleaningJob(sessionManager, userManager) {
     // removeOldProjectsAsync(sessionManager, userManager);
-    cron.schedule(CRON_EXPRESSION, () => removeOldProjectsAsync(sessionManager, userManager))
+    // removeUntetheredScratchprojects(sessionManager,userManager)
+    cron.schedule(CRON_EXPRESSION, async () => {
+        if(inprog) {return} // dont do it twice
+        inprog=true;
+        await removeOldProjectsAsync(sessionManager, userManager);
+        await removeUntetheredScratchprojects(sessionManager,userManager);
+        inprog=false;
+    },{
+        scheduled: true,
+        timezone: "America/Los_Angeles"
+    })
 }
 
 const HOW_OLD_DAYS = 60; // delete projects with no new edits in the last this number of days
@@ -26,7 +37,7 @@ async function removeOldProjectsAsync(sessionManager, userManager) {
 
                 console.log('probing project with id ' + id)
                 let project = sessionManager.getProject(id)
-                if (!project) { 
+                if (!project) {
                     console.log('project doesnt exist, DELETING id ' + id)
                     sessionManager.deleteProjectFile(id); // WARNING- WILL DELETE ALL PROJECTS IF TOO MANY FILES ARE OPEN. CONSIDER REMOVING THIS LINE IN THE FUTURE WHEN BLOCKLIVE HAS TOO MANY FOLKS
                 } //todo check if project not existing messes up delete function
@@ -59,16 +70,25 @@ async function removeOldProjectsAsync(sessionManager, userManager) {
 }
 
 
-async function removeUntetheredScratchprojects(sessionManager,userManager) {
-    Object.entries(sessionManager.scratchprojects).forEach(
-        entry=>{
-            let id = entry[1].blId;
-            let scratchid = entry[0]
+async function removeUntetheredScratchprojects(sessionManager, userManager) {
+
+    fs.readdir(scratchprojectsPath, async (err, files) => {
+        console.log('removal scratchprojectsentries test started', files)
+        for (let scratchid of files) {
+
+            await sleep(60)
+            let entry = sessionManager.getScratchProjectEntry(scratchid)
+            if(!entry) {
+                sessionManager.deleteScratchProjectEntry(scratchid)
+                continue;
+            }
+            let id = entry.blId;
             let project = sessionManager.getProject(id)
-            if(!project) {
-                delete sessionManager.scratchprojects[scratchid]
-                
+            if (!project) {
+                sessionManager.deleteScratchProjectEntry(scratchid)
+                continue
             }
         }
+    }
     )
 }
