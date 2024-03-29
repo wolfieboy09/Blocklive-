@@ -42,6 +42,9 @@ import { blocklivePath, lastIdPath, loadMapFromFolder, saveMapToFolder, saveMapT
 import { Filter } from './profanity-filter.js';
 import { postText } from './discord-webhook.js';
 import { installCleaningJob } from './removeOldProjects.js';
+
+
+const restartMessage = 'Blocklive server is restarting, you may lose connection for a few seconds.'
 // Load session and user manager objects
 
 
@@ -102,10 +105,13 @@ async function saveAsync() {
      await saveMapToFolderAsync(userManager.users,usersPath);
 }
 let isFinalSaving = false;
-function finalSave() {
+async function finalSave() {
      if(isFinalSaving) {return} // dont final save twice
+     console.log('sending message "' + restartMessage + '"')
+     sessionManager.broadcastMessageToAllActiveProjects(restartMessage);
+     await sleep(1000 * 2);
      isFinalSaving = true
-     console.log('final save')
+     console.log('final saving...')
      fs.writeFileSync(lastIdPath,(sessionManager.lastId).toString());
      sessionManager.finalSaveAllProjects(); // now they automatically offload
      saveMapToFolder(userManager.users,usersPath);

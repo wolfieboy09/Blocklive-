@@ -3,7 +3,7 @@ import fsp from 'fs/promises'
 import path, { sep } from 'path';
 import sanitize from 'sanitize-filename';
 import { blocklivePath, saveMapToFolder, saveMapToFolderAsync, scratchprojectsPath } from './filesave.js';
-import {Blob} from 'node:buffer'
+import { Blob } from 'node:buffer'
 
 const OFFLOAD_TIMEOUT_MILLIS = 45 * 1000 // you get two minutes before the project offloads
 
@@ -11,23 +11,23 @@ class BlockliveProject {
 
     static fromJSON(json) {
         let ret = new BlockliveProject(json.title)
-        Object.entries(json).forEach(entry=>{
+        Object.entries(json).forEach(entry => {
             ret[entry[0]] = entry[1]
         })
         return ret;
     }
 
     toJSON() { // this function makes it so that the file writer doesnt save the change log. remove it to re-implement saving the change log
-        let ret = {...this}
+        let ret = { ...this }
 
         let n = 5; // trim changes on save
-        n = Math.min(n,ret.changes.length);
+        n = Math.min(n, ret.changes.length);
 
         ret.indexZeroVersion += ret.changes.length - n;
         ret.changes = ret.changes.slice(-n)
 
         // if the changes list string is more than 20 mb, dont write changes
-        if(new Blob([JSON.stringify(ret.changes)]).size > 2e7) {
+        if (new Blob([JSON.stringify(ret.changes)]).size > 2e7) {
             ret.indexZeroVersion += ret.changes.length
             ret.changes = [];
         }
@@ -58,30 +58,30 @@ class BlockliveProject {
 
     // removes previous bitmap/svg updates of same sprite to save loading time
     trimCostumeEdits(newchange) {
-        if(newchange.meta == "vm.updateBitmap" || newchange.meta == "vm.updateSvg") {
+        if (newchange.meta == "vm.updateBitmap" || newchange.meta == "vm.updateSvg") {
             let target = newchange.target
             let costumeIndex = newchange.costumeIndex
             let limit = 20;
-            for(let i=this.changes.length-1; i>=0 && i>=this.changes.length-limit; i--) {
+            for (let i = this.changes.length - 1; i >= 0 && i >= this.changes.length - limit; i--) {
                 let change = this.changes[i];
                 let spn = change?.data?.name
-                if(spn == "reordercostume" || spn == 'renamesprite') {break}
-                if((change.meta == "vm.updateBitmap" || change.meta == "vm.updateSvg") && change.target == target && change.costumeIndex == costumeIndex) {
-                    this.changes[i] = {meta:'version++'}
+                if (spn == "reordercostume" || spn == 'renamesprite') { break }
+                if ((change.meta == "vm.updateBitmap" || change.meta == "vm.updateSvg") && change.target == target && change.costumeIndex == costumeIndex) {
+                    this.changes[i] = { meta: 'version++' }
                 }
             }
         }
     }
 
     getChangesSinceVersion(lastVersion) {
-        return this.changes.slice(Math.max(0,lastVersion-this.indexZeroVersion))
+        return this.changes.slice(Math.max(0, lastVersion - this.indexZeroVersion))
     }
 
     // trim changes to lenght n
     trimChanges(n) {
         // bound n: 0 < n < total changes lenght
-        if(!n) {n=0}
-        n = Math.min(n,this.changes.length);
+        if (!n) { n = 0 }
+        n = Math.min(n, this.changes.length);
 
         this.indexZeroVersion += this.changes.length - n;
         this.changes = this.changes.slice(-n)
@@ -97,7 +97,7 @@ class BlockliveClient {
     username
     socket
 
-    cursor = {targetName:null,scale:1,scrollX:0,scrollY:0,cursorX:0,cursorY:0,editorTab:0}
+    cursor = { targetName: null, scale: 1, scrollX: 0, scrollY: 0, cursorX: 0, cursorY: 0, editorTab: 0 }
 
     constructor(socket, username) {
         this.socket = socket
@@ -105,7 +105,7 @@ class BlockliveClient {
     }
 
     trySendMessage(data) {
-        if(this.isReady) {this.socket.send(data)}
+        if (this.isReady) { this.socket.send(data) }
     }
 
     id() {
@@ -119,7 +119,7 @@ class BlockliveSess {
     project
     id
 
-    constructor(project,id) {
+    constructor(project, id) {
         this.project = project
         this.id = id
     }
@@ -139,28 +139,29 @@ class BlockliveSess {
     }
 
     getConnectedUsernames() {
-        return [...(new Set(Object.values(this.connectedClients).map(client=>client.username?.toLowerCase())))]
+        return [...(new Set(Object.values(this.connectedClients).map(client => client.username?.toLowerCase())))]
     }
 
     // get one client per username
     getConnectedUsersClients() {
         let clients = {}
-        Object.values(this.connectedClients).forEach(client=>{clients[client.username.toLowerCase()]=client})
+        Object.values(this.connectedClients).forEach(client => { clients[client.username.toLowerCase()] = client })
         return clients
     }
 
-    sendChangeFrom(socket,msg,excludeVersion) {
-        Object.values(this.connectedClients).forEach(client=>{
-            if(socket.id != client.id()){ 
+    sendChangeFrom(socket, msg, excludeVersion) {
+        Object.values(this.connectedClients).forEach(client => {
+            if (!socket || (socket.id != client.id())) {
                 // console.log('sending message to: ' + client.username + " | type: " + msg.type)
                 client.trySendMessage({
-                type:'projectChange',
-                blId:this.id,
-                version: excludeVersion ? null : this.project.version,
-                msg,
-                from:socket.id,
-                user:this.getClientFromSocket(socket)?.username
-            })}
+                    type: 'projectChange',
+                    blId: this.id,
+                    version: excludeVersion ? null : this.project.version,
+                    msg,
+                    from: socket?.id,
+                    user: this.getClientFromSocket(socket)?.username
+                })
+            }
         })
     }
 
@@ -169,16 +170,16 @@ class BlockliveSess {
         msg.user = client?.username
         this.project.recordChange(msg)
         this.project.lastUser = client ? client.username : this.project.lastUser
-        this.sendChangeFrom(socket,msg)
+        this.sendChangeFrom(socket, msg)
     }
 
     getWonkySockets() {
         let wonkyKeys = []
-        Object.entries(this.connectedClients).forEach(entry=>{
+        Object.entries(this.connectedClients).forEach(entry => {
             let socket = entry[1].socket
-            if(socket.disconnected || socket.id!=entry[0]) {
+            if (socket.disconnected || socket.id != entry[0]) {
                 wonkyKeys.push(entry[0])
-                console.log('WONKINESS DETECTED! disconnected:',socket.disconnected,'wrong id', ocket.id!=entry[0])
+                console.log('WONKINESS DETECTED! disconnected:', socket.disconnected, 'wrong id', ocket.id != entry[0])
             }
             // if(Object.keys(this.connectedClients).length == 0) {
             //     // project.project.trimChanges(20)
@@ -193,28 +194,28 @@ class ProjectWrapper {
 
     toJSON() {
         let ret = {
-            project:this.project,
-            id:this.id,
-            scratchId:this.scratchId,
-            projectJson:this.projectJson,
-            jsonVersion:this.jsonVersion,
-            linkedWith:this.linkedWith,
-            owner:this.owner,
-            sharedWith:this.sharedWith,
-            chat:this.chat,
+            project: this.project,
+            id: this.id,
+            scratchId: this.scratchId,
+            projectJson: this.projectJson,
+            jsonVersion: this.jsonVersion,
+            linkedWith: this.linkedWith,
+            owner: this.owner,
+            sharedWith: this.sharedWith,
+            chat: this.chat,
         }
         return ret;
     }
 
     static fromJSON(json) {
         let ret = new ProjectWrapper('&')
-        Object.entries(json).forEach(entry=>{
-            if(entry[0] != 'project') {
+        Object.entries(json).forEach(entry => {
+            if (entry[0] != 'project') {
                 ret[entry[0]] = entry[1]
             }
         })
         ret.project = BlockliveProject.fromJSON(json.project)
-        ret.session = new BlockliveSess(ret.project,ret.id)
+        ret.session = new BlockliveSess(ret.project, ret.id)
         return ret
     }
 
@@ -238,24 +239,24 @@ class ProjectWrapper {
     sharedWith = []
 
     chat = []
-    static defaultChat = {sender:'blocklive',text:'Welcome! Chat is public, monitored, and filtered. Report inappropriate things to @ilhp10. Drag the top of this chatbox to move it and drag the bottom right to resize it!'}
+    static defaultChat = { sender: 'blocklive', text: 'Welcome! Chat is public, monitored, and filtered. Report inappropriate things to @ilhp10. Drag the top of this chatbox to move it and drag the bottom right to resize it!' }
 
-    constructor(owner,scratchId,projectJson,blId,title) {
-        if(owner == '&') {return}
+    constructor(owner, scratchId, projectJson, blId, title) {
+        if (owner == '&') { return }
         this.id = blId
         this.owner = owner
         this.projectJson = projectJson
         this.scratchId = scratchId
         this.project = new BlockliveProject(title)
-        this.session = new BlockliveSess(this.project,this.id)
-        this.linkedWith.push({scratchId,owner})
+        this.session = new BlockliveSess(this.project, this.id)
+        this.linkedWith.push({ scratchId, owner })
         this.chat.push(ProjectWrapper.defaultChat)
     }
 
 
-    onChat(msg,socket) {
+    onChat(msg, socket) {
         this.chat.push(msg.msg)
-        this.session.sendChangeFrom(socket,msg,true)
+        this.session.sendChangeFrom(socket, msg, true)
         this.trimChat(500)
     }
     getChat() {
@@ -263,9 +264,20 @@ class ProjectWrapper {
     }
     trimChat(n) {
         // bound n: 0 < n < total changes lenght
-        if(!n) {n=0}
-        n = Math.min(n,this.chat.length);
+        if (!n) { n = 0 }
+        n = Math.min(n, this.chat.length);
         this.chat = this.chat.slice(-n)
+    }
+    serverSendChat(message, from) {
+        if (!from) { from = 'Blocklive' }
+        let msg = {
+            "meta": "chat",
+            "msg": {
+                "sender": from,
+                "text": message,
+            }
+        }
+        this.session.sendChangeFrom(null, msg, true)
     }
 
     // scratchSaved(id,version) {
@@ -278,11 +290,11 @@ class ProjectWrapper {
     // }
 
     isSharedWith(username) {
-        return username==this.owner || this.sharedWith.includes(username)
+        return username == this.owner || this.sharedWith.includes(username)
     }
 
-    scratchSavedJSON(json,version) {
-        if(version <= this.jsonVersion) {console.log('version too low. not recording. most recent version & id:',this.jsonVersion);return}
+    scratchSavedJSON(json, version) {
+        if (version <= this.jsonVersion) { console.log('version too low. not recording. most recent version & id:', this.jsonVersion); return }
         this.projectJson = json
         this.jsonVersion = version
         this.project.trimChanges(10)
@@ -291,50 +303,52 @@ class ProjectWrapper {
     }
 
     linkProject(scratchId, owner) {
-        this.linkedWith.push({scratchId,owner})
+        this.linkedWith.push({ scratchId, owner })
         // this.linkedWith.push({scratchId,owner,version})
     }
 
     // returns {scratchId, owner}
     getOwnersProject(owner) {
-        return this.linkedWith.find(project=>project.owner?.toLowerCase()==owner?.toLowerCase())
+        return this.linkedWith.find(project => project.owner?.toLowerCase() == owner?.toLowerCase())
     }
 
-    joinSession(socket,username) {
-        if(socket.id in this.session.connectedClients) {return}
-        let client = new BlockliveClient(socket,username)
+    joinSession(socket, username) {
+        if (socket.id in this.session.connectedClients) { return }
+        let client = new BlockliveClient(socket, username)
         this.session.addClient(client)
-        if(!this.project.lastUser) {this.project.lastUser = username}
+        if (!this.project.lastUser) { this.project.lastUser = username }
     }
 
 }
 
-export default class SessionManager{
+export default class SessionManager {
 
     toJSON() {
         let ret = {
             // scratchprojects:this.scratchprojects, //todo return only changed projects
-            blocklive:this.blocklive,
-            lastId:this.lastId,
+            blocklive: this.blocklive,
+            lastId: this.lastId,
         }
         return ret
-        
+
     }
     static fromJSON(ob) {
         console.log(ob)
         let ret = new SessionManager();
         // if(ob.scratchprojects) { ret.scratchprojects = ob.scratchprojects; }
-        if(ob.lastId) { ret.lastId = ob.lastId; }
-        if(ob.blocklive) { Object.entries(ob.blocklive).forEach(entry=>{
-            ret.blocklive[entry[0]] = ProjectWrapper.fromJSON(entry[1]);
-        })}
-        
+        if (ob.lastId) { ret.lastId = ob.lastId; }
+        if (ob.blocklive) {
+            Object.entries(ob.blocklive).forEach(entry => {
+                ret.blocklive[entry[0]] = ProjectWrapper.fromJSON(entry[1]);
+            })
+        }
+
         return ret;
     }
 
     static inst;
 
-    
+
     // map scratch project id's to info objects {owner, blId}
     // scratchprojects = {}
     // id -> ProjectWrapper
@@ -348,29 +362,29 @@ export default class SessionManager{
     }
 
     offloadStaleProjects() {
-        Object.entries(this.blocklive).forEach(entry=>{
+        Object.entries(this.blocklive).forEach(entry => {
             let project = entry[1]
             let id = entry[0]
-            if(Object.keys(project.session.connectedClients).length == 0) {
+            if (Object.keys(project.session.connectedClients).length == 0) {
                 project.project.trimChanges(20)
                 this.offloadProject(id)
             }
         })
     }
     finalSaveAllProjects() {
-        Object.entries(this.blocklive).forEach(entry=>{
+        Object.entries(this.blocklive).forEach(entry => {
             let project = entry[1]
             let id = entry[0]
             project.project.trimChanges(20)
         })
-        saveMapToFolder(this.blocklive,blocklivePath)
+        saveMapToFolder(this.blocklive, blocklivePath)
         this.blocklive = {}
     }
     async offloadStaleProjectsAsync() {
-        for (let entry of Object.entries(this.blocklive)){
+        for (let entry of Object.entries(this.blocklive)) {
             let project = entry[1]
             let id = entry[0]
-            if(Object.keys(project.session.connectedClients).length == 0) {
+            if (Object.keys(project.session.connectedClients).length == 0) {
                 project.project.trimChanges(20)
                 await this.offloadProjectAsync(id)
             }
@@ -378,8 +392,8 @@ export default class SessionManager{
     }
     offloadProjectIfStale(id) {
         let project = this.blocklive[id];
-        if(!project) {return}
-        if(Object.keys(project.session.connectedClients).length == 0) {
+        if (!project) { return }
+        if (Object.keys(project.session.connectedClients).length == 0) {
             project.project.trimChanges(20)
             this.offloadProject(id)
         } else {
@@ -387,32 +401,32 @@ export default class SessionManager{
         }
     }
     offloadProject(id) {
-        try{
+        try {
             console.log('offloading project ' + id)
             let toSaveBlocklive = {}
             toSaveBlocklive[id] = this.blocklive[id]
-            if(toSaveBlocklive[id]) { // only save it if there is actual data to save
-                saveMapToFolder(toSaveBlocklive,blocklivePath);
+            if (toSaveBlocklive[id]) { // only save it if there is actual data to save
+                saveMapToFolder(toSaveBlocklive, blocklivePath);
             }
             delete this.blocklive[id]
-        } catch (e) {console.error(e)}
+        } catch (e) { console.error(e) }
     }
     async offloadProjectAsync(id) {
-        try{
+        try {
             console.log('offloading project ' + id)
             let toSaveBlocklive = {}
             toSaveBlocklive[id] = this.blocklive[id]
-            if(toSaveBlocklive[id]) { // only save it if there is actual data to save
-                await saveMapToFolderAsync(toSaveBlocklive,blocklivePath);
+            if (toSaveBlocklive[id]) { // only save it if there is actual data to save
+                await saveMapToFolderAsync(toSaveBlocklive, blocklivePath);
             }
             delete this.blocklive[id]
-        } catch (e) {console.error(e)}
+        } catch (e) { console.error(e) }
     }
     reloadProject(id) {
         id = sanitize(id + '')
         let filename = blocklivePath + path.sep + id;
-        let d=null;
-        if(!(id in this.blocklive) && fs.existsSync(filename)) {
+        let d = null;
+        if (!(id in this.blocklive) && fs.existsSync(filename)) {
             try {
                 d = fs.openSync(filename)
                 let file = fs.readFileSync(d)
@@ -427,7 +441,7 @@ export default class SessionManager{
             } catch (e) {
                 // if(!id) {return}
                 console.error("reloadProject: couldn't read project with id: " + id + ". err msg: ", e)
-                
+
                 // if(d) {
                 //     try{fs.closeSync(d)}
                 //     catch(e) {console.error(e)}
@@ -438,9 +452,9 @@ export default class SessionManager{
     async reloadProjectAsync(id) {
 
         id = sanitize(id + '')
-        if(!(id in this.blocklive)) {
+        if (!(id in this.blocklive)) {
             try {
-                
+
                 let file = await fsp.readFile(blocklivePath + path.sep + id)
 
                 let json = JSON.parse(file)
@@ -454,43 +468,43 @@ export default class SessionManager{
         }
     }
 
-    linkProject(id,scratchId,owner,version) {
+    linkProject(id, scratchId, owner, version) {
         let project = this.getProject(id)
-        if(!project) {return}
-        project.linkProject(scratchId,owner,version)
+        if (!project) { return }
+        project.linkProject(scratchId, owner, version)
         // this.scratchprojects[scratchId] = {owner,blId:id}
-        this.makeScratchProjectEntry(scratchId,owner,id)
+        this.makeScratchProjectEntry(scratchId, owner, id)
     }
 
     // constructor(owner,scratchId,json,blId,title) {
-    newProject(owner,scratchId,json,title) {
-        if(this.doesScratchProjectEntryExist(scratchId)) {return this.getProject(this.getScratchProjectEntry(scratchId).blId)}
+    newProject(owner, scratchId, json, title) {
+        if (this.doesScratchProjectEntryExist(scratchId)) { return this.getProject(this.getScratchProjectEntry(scratchId).blId) }
         let id = String(this.getNextId())
-        let project = new ProjectWrapper(owner,scratchId,json,id,title)
+        let project = new ProjectWrapper(owner, scratchId, json, id, title)
         this.blocklive[id] = project
-        this.makeScratchProjectEntry(scratchId,owner,id)
+        this.makeScratchProjectEntry(scratchId, owner, id)
         // this.scratchprojects[scratchId] = {owner,blId:id}
 
         return project
     }
 
-    join(socket,id,username,) {
+    join(socket, id, username,) {
         let project = this.getProject(id)
-        if(!project) {return}
-        project.joinSession(socket,username)
-        if(!(socket.id in this.socketMap)) {
-            this.socketMap[socket.id] = {username:username,projects:[]}
+        if (!project) { return }
+        project.joinSession(socket, username)
+        if (!(socket.id in this.socketMap)) {
+            this.socketMap[socket.id] = { username: username, projects: [] }
         }
-        if(this.socketMap[socket.id].projects.indexOf(project.id) == -1){
+        if (this.socketMap[socket.id].projects.indexOf(project.id) == -1) {
             this.socketMap[socket.id].projects.push(project.id)
         }
         console.log(username + ' joined | blId: ' + id + ', scratchId: ' + project.scratchId)
     }
-    leave(socket,id,voidMap) {
+    leave(socket, id, voidMap) {
         let project = this.getProject(id)
-        if(!project) {return}
+        if (!project) { return }
         let username = project.session.removeClient(socket.id)
-        if(socket.id in this.socketMap && !voidMap) {
+        if (socket.id in this.socketMap && !voidMap) {
             let array = this.socketMap[socket.id].projects
 
             const index = array.indexOf(id);
@@ -498,21 +512,21 @@ export default class SessionManager{
                 array.splice(index, 1);
             }
         }
-        if(Object.keys(project.session.connectedClients).length == 0) {
+        if (Object.keys(project.session.connectedClients).length == 0) {
             project.project.trimChanges(20)
             this.offloadProject(id)
         }
         console.log(username + ' LEFT | blId: ' + id + ', scratchId: ' + project.scratchId)
-    } 
+    }
 
     disconnectSocket(socket) {
-        if(!(socket.id in this.socketMap)){return}
-        this.socketMap[socket.id].projects.forEach(projectId=>{this.leave(socket,projectId,true)})
+        if (!(socket.id in this.socketMap)) { return }
+        this.socketMap[socket.id].projects.forEach(projectId => { this.leave(socket, projectId, true) })
         delete this.socketMap[socket.id]
     }
 
-    projectChange(blId,data,socket) {
-        this.getProject(blId)?.session.onProjectChange(socket,data.msg)
+    projectChange(blId, data, socket) {
+        this.getProject(blId)?.session.onProjectChange(socket, data.msg)
     }
 
     getVersion(blId) {
@@ -525,21 +539,21 @@ export default class SessionManager{
 
     // todo checking
     attachScratchProject(scratchId, owner, blockliveId) {
-        this.makeScratchProjectEntry(scratchId,owner,blockliveId)
+        this.makeScratchProjectEntry(scratchId, owner, blockliveId)
         // this.scratchprojects[scratchId] = {owner,blId:blockliveId}
     }
 
     offloadTimeoutIds = {}
     renewOffloadTimeout(blId) {
-         // clear previous timeout
+        // clear previous timeout
         clearTimeout(this.offloadTimeoutIds[blId]);
         delete this.offloadTimeoutIds[blId]
         // set new timeout
-        let timeout = setTimeout(()=>{this.offloadProjectIfStale(blId)},OFFLOAD_TIMEOUT_MILLIS)
+        let timeout = setTimeout(() => { this.offloadProjectIfStale(blId) }, OFFLOAD_TIMEOUT_MILLIS)
         this.offloadTimeoutIds[blId] = timeout
 
-    } 
-    
+    }
+
     getProject(blId) {
         this.renewOffloadTimeout(blId)
         this.reloadProject(blId)
@@ -550,18 +564,18 @@ export default class SessionManager{
         await this.reloadProject(blId)
         return this.blocklive[blId]
     }
-    shareProject(id,user,pk) {
+    shareProject(id, user, pk) {
         console.log(`sessMngr: sharing ${id} with ${user} (usrId ${pk})`)
         let project = this.getProject(id)
-        if(!project) {return}
+        if (!project) { return }
         project.sharedWith.push(user)
     }
-    unshareProject(id,user) {
+    unshareProject(id, user) {
         console.log(`sessMngr: unsharing ${id} with ${user}`)
         let project = this.getProject(id)
-        if(!project) {return}
+        if (!project) { return }
 
-        project.linkedWith.filter(proj=>(proj.owner.toLowerCase() == user.toLowerCase())).forEach(proj=>{
+        project.linkedWith.filter(proj => (proj.owner.toLowerCase() == user.toLowerCase())).forEach(proj => {
             project.linkedWith.splice(project.linkedWith.indexOf(proj))
             this.deleteScratchProjectEntry(proj.scratchId)
             // delete this.scratchprojects[proj.scratchId]
@@ -571,17 +585,17 @@ export default class SessionManager{
             // }
         })
 
-        if(project.owner.toLowerCase() == user.toLowerCase()) {
+        if (project.owner.toLowerCase() == user.toLowerCase()) {
             project.owner = project.sharedWith[0] ? project.sharedWith[0] : '';
         }
 
         let userIndex = project.sharedWith.indexOf(user)
-        if(userIndex != -1) {
-            project.sharedWith.splice(userIndex,1)
+        if (userIndex != -1) {
+            project.sharedWith.splice(userIndex, 1)
         }
 
         // delete the project file if no-one owns it
-        if(project.onwer == '') {
+        if (project.onwer == '') {
             this.deleteProjectFile(project.id)
         }
         // TODO: Handle what-if their project is the inpoint?
@@ -592,50 +606,64 @@ export default class SessionManager{
 
         this.offloadProject(id)
         let projectPath = blocklivePath + path.sep + sanitize(id)
-        if(fs.existsSync(projectPath)) {
-            try{ fs.rmSync(projectPath) } catch(e){console.error('error when deleting project file after unsharing with everyone',e)} 
+        if (fs.existsSync(projectPath)) {
+            try { fs.rmSync(projectPath) } catch (e) { console.error('error when deleting project file after unsharing with everyone', e) }
         }
     }
 
     getScratchToBLProject(scratchId) {
         let blId = this.getScratchProjectEntry(scratchId)?.blId
-        if(!blId) {return null}
+        if (!blId) { return null }
         return this.getProject(blId)
     }
 
     getScratchProjectEntry(scratchId) {
-        try{
-        if(!scratchId) {return}
-        let scratchIdFilename = sanitize(scratchId + '');
-        let filename = scratchprojectsPath + path.sep + scratchIdFilename;
-        if(!fs.existsSync(filename)) {return null}
-        let file = fs.readFileSync(filename)
-        let entry = JSON.parse(file)
-        return entry;
-        } catch (e) {console.error(e)}
+        try {
+            if (!scratchId) { return }
+            let scratchIdFilename = sanitize(scratchId + '');
+            let filename = scratchprojectsPath + path.sep + scratchIdFilename;
+            if (!fs.existsSync(filename)) { return null }
+            let file = fs.readFileSync(filename)
+            let entry = JSON.parse(file)
+            return entry;
+        } catch (e) { console.error(e) }
     }
-    makeScratchProjectEntry(scratchId,owner,blId) {
-        try{
-        if(!scratchId) {return}
-        let scratchIdFilename = sanitize(scratchId + '');
-        let filename = scratchprojectsPath + path.sep + scratchIdFilename;
-        let entry = {owner,blId}
-        let fileData = JSON.stringify(entry)
-        fs.writeFileSync(filename,fileData)
-        } catch (e) {console.error(e)}
+    makeScratchProjectEntry(scratchId, owner, blId) {
+        try {
+            if (!scratchId) { return }
+            let scratchIdFilename = sanitize(scratchId + '');
+            let filename = scratchprojectsPath + path.sep + scratchIdFilename;
+            let entry = { owner, blId }
+            let fileData = JSON.stringify(entry)
+            fs.writeFileSync(filename, fileData)
+        } catch (e) { console.error(e) }
     }
     doesScratchProjectEntryExist(scratchId) {
-        if(!scratchId) {return false}
+        if (!scratchId) { return false }
         let scratchIdFilename = sanitize(scratchId + '');
         let filename = scratchprojectsPath + path.sep + scratchIdFilename;
         return fs.existsSync(filename)
     }
     deleteScratchProjectEntry(scratchId) {
         console.log(`DELETING scratch project entry ${scratchId}`)
-        if(!scratchId) {return}
+        if (!scratchId) { return }
         let scratchIdFilename = sanitize(scratchId + '');
         let filename = scratchprojectsPath + path.sep + scratchIdFilename;
         fs.rmSync(filename);
+    }
+
+    // if 'from' is null, defaults to 'Blocklive'
+    broadcastMessageToAllActiveProjects(message, from) {
+        Object.entries(this.blocklive).forEach(entry => {
+            let id = entry[0];
+            let project = entry[1];
+
+            try {
+                if (Object.keys(project.session.connectedClients).length > 0) {
+                    project.serverSendChat(message,from)
+                }
+            } catch (e) { console.error(e) }
+        })
     }
 
 }
