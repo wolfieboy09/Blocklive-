@@ -666,4 +666,45 @@ export default class SessionManager {
         })
     }
 
+    getStats() {
+        let set1 = new Set();
+        let set2 = new Set();
+        let stats = {
+            totalActiveProjects:0,
+            totalMoreThan1Editor:0,
+            usersActive:[],
+            usersActiveCount:0,
+            usersActiveMoreThan1Editor:[],
+            usersActiveMoreThan1EditorCount:0,
+            maxInOneProject:{
+                id:0,
+                num:0,
+            }
+        }
+        Object.entries(this.blocklive).forEach(entry => {
+            let id = entry[0];
+            let project = entry[1];
+
+            try {
+                if (Object.keys(project.session.connectedClients).length > 0) {
+                    stats.totalActiveProjects++;
+                    set1.add(...project.session.getConnectedUsernames())
+                }
+                if (Object.keys(project.session.connectedClients).length > 1) {
+                    stats.totalMoreThan1Editor++;
+                    set2.add(...project.session.getConnectedUsernames())
+                }
+                if(Object.keys(project.session.connectedClients).length > stats.maxInOneProject.num) {
+                    stats.maxInOneProject.num = Object.keys(project.session.connectedClients).length;
+                    stats.maxInOneProject.id = project.id;
+                }
+            } catch (e) { console.error(e) }
+        })
+        stats.usersActive = Array.from(set1);
+        stats.usersActiveMoreThan1Editor = Array.from(set2);
+        stats.usersActiveCount = stats.usersActive.length
+        stats.usersActiveMoreThan1EditorCount = stats.usersActiveMoreThan1Editor.length
+        return stats;
+    }
+
 }

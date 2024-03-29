@@ -312,6 +312,16 @@ app.get('/chat/:id/',(req,res)=>{
           res.send(project.getChat())
      }
 })
+let cachedStats = null;
+let cachedStatsTime = 0;
+let cachedStatsLifetimeMillis = 1000;
+app.get('/stats',(req,res)=>{
+     if(Date.now() - cachedStatsTime > cachedStatsLifetimeMillis) {
+          cachedStats = sessionManager.getStats()
+          cachedStatsTime = Date.now()
+     } 
+     res.send(cachedStats)
+})
 app.put('/linkScratch/:scratchId/:blId/:owner',(req,res)=>{
      console.log('linking:',req.params)
      sessionManager.linkProject(req.params.blId,req.params.scratchId,req.params.owner,0)
