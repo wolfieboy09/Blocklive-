@@ -10,7 +10,7 @@ function sleep(millis) {
 }
 
 export function installCleaningJob(sessionManager, userManager) {
-    removeOldProjectsAsync(sessionManager, userManager);
+    // removeOldProjectsAsync(sessionManager, userManager);
     cron.schedule(CRON_EXPRESSION, () => removeOldProjectsAsync(sessionManager, userManager))
 }
 
