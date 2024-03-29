@@ -671,7 +671,7 @@ export default class SessionManager {
         let set2 = new Set();
         let stats = {
             totalActiveProjects:0,
-            totalMoreThan1Editor:0,
+            totalProjectsMoreThan1Editor:0,
             usersActive:[],
             usersActiveCount:0,
             usersActiveMoreThan1Editor:[],
@@ -686,15 +686,15 @@ export default class SessionManager {
             let project = entry[1];
 
             try {
-                if (Object.keys(project.session.connectedClients).length > 0) {
+                if (project.session.getConnectedUsernames().length > 0) {
                     stats.totalActiveProjects++;
-                    set1.add(...project.session.getConnectedUsernames())
+                    project.session.getConnectedUsernames().forEach(set1.add,set1)
                 }
-                if (Object.keys(project.session.connectedClients).length > 1) {
-                    stats.totalMoreThan1Editor++;
-                    set2.add(...project.session.getConnectedUsernames())
+                if (project.session.getConnectedUsernames().length > 1) {
+                    stats.totalProjectsMoreThan1Editor++;
+                    project.session.getConnectedUsernames().forEach(set2.add,set2)
                 }
-                if(Object.keys(project.session.connectedClients).length > stats.maxInOneProject.num) {
+                if(project.session.getConnectedUsernames().length > stats.maxInOneProject.num) {
                     stats.maxInOneProject.num = Object.keys(project.session.connectedClients).length;
                     stats.maxInOneProject.id = project.id;
                 }
