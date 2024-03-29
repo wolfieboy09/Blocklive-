@@ -407,10 +407,10 @@ export default class SessionManager{
                 // if(!id) {return}
                 console.error("reloadProject: couldn't read project with id: " + id + ". err msg: ", e)
                 
-                if(d) {
-                    try{fs.closeSync(d)}
-                    catch(e) {console.error(e)}
-                }
+                // if(d) {
+                //     try{fs.closeSync(d)}
+                //     catch(e) {console.error(e)}
+                // }
             }
         }
     }
