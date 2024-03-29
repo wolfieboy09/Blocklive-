@@ -318,6 +318,7 @@ let cachedStatsLifetimeMillis = 1000;
 app.get('/stats',(req,res)=>{
      if(Date.now() - cachedStatsTime > cachedStatsLifetimeMillis) {
           cachedStats = sessionManager.getStats()
+          cachedStats.cachedAt = new Date();
           cachedStatsTime = Date.now()
      } 
      res.send(cachedStats)
