@@ -9,6 +9,7 @@ const exId = document.querySelector(".blocklive-ext").dataset.exId
 function sleep(millis) {
     return new Promise(res=>setTimeout(res,millis));
 }
+let revertJSON = null;
 let queryList = []
 let bl_projectId = null
 store = null
@@ -181,6 +182,7 @@ async function joinExistingBlocklive(id) {
     try {
     // console.log('downloading scratch id',inpoint.scratchId)
     console.log('loading scratch project inpoint',inpoint)
+    revertJSON = vm.toJSON()
     await vm.loadProject(projectJson)
         blVersion = inpoint.version
     } catch (e) {
@@ -2103,7 +2105,11 @@ function outlineBlock(blockId, username) {
 console.log('running gui inject...')
 let shareDropdown = `
 <container style="width:200px; row-gap: 5px; display:flex;flex-direction:column;background-color: hsla(260, 60%, 60%, 1);padding:10px; border-radius: 17px;">
+
+
 <div  style="color:white;font-weight:normal;font-face='Helvetica Neue','Helvetica',Arial,sans-serif">   
+
+
 <sharedWith style="display:flex;flex-direction: column;">
         <text style="display:flex;align-self: left;padding-left:4px; padding-top:5px;padding-bottom:5px;font-size: large;">
             Shared With
@@ -2544,6 +2550,29 @@ function makeBlockliveButton() {
     button.appendChild(text)
     return button
 }
+function makeRevertButton() {
+    let button = document.createElement('blocklive-init')
+    button.className = 'button_outlined-button_1bS__ menu-bar_menu-bar-button_3IDN0 community-button_community-button_2Lo_g'
+    
+    
+    button.style.marginLeft = '7px'
+    button.style.paddingLeft = '7px'
+    button.style.paddingRight = '7px'
+    button.style.gap = '7px'
+    // button.style.background = ' linear-gradient(90deg, rgba(51,0,54,1) 0%, rgba(255,0,113,1) 60%)'
+    // button.style.background = 'rgba(255,0,113,1)' // blocklive pink
+    button.style.display = 'flex'
+    button.style.flexDirection = 'row'
+    button.style.backgroundColor = '#c2aaff'
+    button.style.color = '#a00000'
+
+    let text = document.createElement('text')
+    text.style.textAlign = 'center'
+    text.innerHTML = "Revert"
+
+    button.appendChild(text)
+    return button
+}
 
 let yeet = '⚠️'
 
@@ -2679,8 +2708,11 @@ listenForObj('#app > div > div.gui_menu-bar-position_3U1T0.menu-bar_menu-bar_Jcu
         injectJSandCSS()
 
         refreshShareModal()
+
+        addRevertButton()
+
     }
-)
+);
 
 //// Inject active users display
 listenForObj("#app > div > div.gui_menu-bar-position_3U1T0.menu-bar_menu-bar_JcuHF.box_box_2jjDp > div.menu-bar_account-info-group_MeJZP",(accountInfo)=>{
@@ -2708,8 +2740,60 @@ listenForObj("#app > div > div.gui_menu-bar-position_3U1T0.menu-bar_menu-bar_Jcu
 
    setTopbarButtonVisibility()
 
+   document.querySelector("span.menu-bar_tutorials-label_2tFBo").remove()
+
+
     showCachedOnlineUsers();
+
 })
+}
+
+
+function addRevertButton() {
+    let mystuff = document.querySelector("div.menu-bar_account-info-group_MeJZP > a")
+    let  seeProjectPage = document.querySelector("span.community-button_community-button_2Lo_g");
+
+    if(!blId) {return}
+
+    // let container = document.createElement('revertContainer')
+    // container.style.display = 'flex'
+    // container.style.flexDirection = 'column'
+
+    // if(!doIOwnThis()) {return} // if 
+    let button = makeRevertButton()
+    // let dropdown = document.createElement('blockliveDropdown')
+    // dropdown.innerHTML = shareDropdown
+    // dropdown.style.position = 'absolute'
+    // dropdown.style.top = '40px'
+    // dropdown.style.borderRadius = '17px'
+    // dropdown.style.boxShadow = '3px 7px 19px 3px rgba(0,0,0,0.48)'
+    // dropdown.style.display = 'none'
+    // blDropdown = dropdown
+
+    button.onclick = ()=>{
+        revertProject()
+        // if(blId) {
+        //     // if already is shared
+        //     return blShareClick()
+        // } else {
+        //     // if is regular scratch project
+        //     return blActivateClick()
+        // }
+    }
+
+    // container.appendChild(button)
+    // mystuff.after(button)
+    seeProjectPage.after(button)
+
+}
+
+
+
+function revertProject() {
+    let conf = window.confirm("Blocklive Revert:\nThis will delete recent blocklive edits and reset the project to the version previously saved in your mystuff. Click 'save now' to save the revert.\nClick Cancel to cancel")
+    if(!conf) {return}
+
+    vm.loadProject(revertJSON)
 }
 
 let COLORS = ['teal','#c42b63']
