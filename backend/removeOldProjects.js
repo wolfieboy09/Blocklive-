@@ -10,7 +10,7 @@ function sleep(millis) {
 }
 
 export function installCleaningJob(sessionManager, userManager) {
-    // removeOldProjectsAsync(sessionManager, userManager);
+    removeOldProjectsAsync(sessionManager, userManager);
     cron.schedule(CRON_EXPRESSION, () => removeOldProjectsAsync(sessionManager, userManager))
 }
 
@@ -28,7 +28,7 @@ async function removeOldProjectsAsync(sessionManager, userManager) {
                 let project = sessionManager.getProject(id)
                 if (!project) { 
                     console.log('project doesnt exist, DELETING id ' + id)
-                    sessionManager.deleteProjectFile(id); // WARNING- WILL DELETE ALL PROJECTS IF TOO MANY FILES ARE OPEN. CONSIDER REMOVING THIS LINE IN THE FUTURE WHEN BLOCKLIVE HAS TOO MANY FOLKS
+                    // sessionManager.deleteProjectFile(id); // WARNING- WILL DELETE ALL PROJECTS IF TOO MANY FILES ARE OPEN. CONSIDER REMOVING THIS LINE IN THE FUTURE WHEN BLOCKLIVE HAS TOO MANY FOLKS
                 } //todo check if project not existing messes up delete function
                 else { // if project does exist
                     id = project.id; // since we know that project.id exists
