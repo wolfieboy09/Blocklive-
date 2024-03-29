@@ -57,3 +57,18 @@ async function removeOldProjectsAsync(sessionManager, userManager) {
         }
     })
 }
+
+
+async function removeUntetheredScratchprojects(sessionManager,userManager) {
+    Object.entries(sessionManager.scratchprojects).forEach(
+        entry=>{
+            let id = entry[1].blId;
+            let scratchid = entry[0]
+            let project = sessionManager.getProject(id)
+            if(!project) {
+                delete sessionManager.scratchprojects[scratchid]
+                
+            }
+        }
+    )
+}

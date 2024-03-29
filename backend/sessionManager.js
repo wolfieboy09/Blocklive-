@@ -311,7 +311,7 @@ export default class SessionManager{
 
     toJSON() {
         let ret = {
-            scratchprojects:this.scratchprojects, //todo return only changed projects
+            // scratchprojects:this.scratchprojects, //todo return only changed projects
             blocklive:this.blocklive,
             lastId:this.lastId,
         }
@@ -321,7 +321,7 @@ export default class SessionManager{
     static fromJSON(ob) {
         console.log(ob)
         let ret = new SessionManager();
-        if(ob.scratchprojects) { ret.scratchprojects = ob.scratchprojects; }
+        // if(ob.scratchprojects) { ret.scratchprojects = ob.scratchprojects; }
         if(ob.lastId) { ret.lastId = ob.lastId; }
         if(ob.blocklive) { Object.entries(ob.blocklive).forEach(entry=>{
             ret.blocklive[entry[0]] = ProjectWrapper.fromJSON(entry[1]);
@@ -334,7 +334,7 @@ export default class SessionManager{
 
     
     // map scratch project id's to info objects {owner, blId}
-    scratchprojects = {}
+    // scratchprojects = {}
     // id -> ProjectWrapper
     blocklive = {}
     socketMap = {}
@@ -437,16 +437,18 @@ export default class SessionManager{
         let project = this.getProject(id)
         if(!project) {return}
         project.linkProject(scratchId,owner,version)
-        this.scratchprojects[scratchId] = {owner,blId:id}
+        // this.scratchprojects[scratchId] = {owner,blId:id}
+        this.makeScratchProjectEntry(scratchId,owner,id)
     }
 
     // constructor(owner,scratchId,json,blId,title) {
     newProject(owner,scratchId,json,title) {
-        if(scratchId in this.scratchprojects) {return this.getProject(this.scratchprojects[scratchId].blId)}
+        if(this.doesScratchProjectEntryExist(scratchId)) {return this.getProject(this.getScratchProjectEntry(scratchId).blId)}
         let id = String(this.getNextId())
         let project = new ProjectWrapper(owner,scratchId,json,id,title)
         this.blocklive[id] = project
-        this.scratchprojects[scratchId] = {owner,blId:id}
+        this.makeScratchProjectEntry(scratchId,owner,id)
+        // this.scratchprojects[scratchId] = {owner,blId:id}
 
         return project
     }
@@ -502,7 +504,8 @@ export default class SessionManager{
 
     // todo checking
     attachScratchProject(scratchId, owner, blockliveId) {
-        this.scratchprojects[scratchId] = {owner,blId:blockliveId}
+        this.makeScratchProjectEntry(scratchId,owner,blockliveId)
+        // this.scratchprojects[scratchId] = {owner,blId:blockliveId}
     }
 
     getProject(blId) {
@@ -526,11 +529,12 @@ export default class SessionManager{
 
         project.linkedWith.filter(proj=>(proj.owner.toLowerCase() == user.toLowerCase())).forEach(proj=>{
             project.linkedWith.splice(project.linkedWith.indexOf(proj))
-            delete this.scratchprojects[proj.scratchId]
-            let projectPatch = scratchprojectsPath + path.sep + sanitize(proj.scratchId + '');
-            if(fs.existsSync(projectPatch)) {
-                try{ fs.rmSync(projectPatch) } catch(e){console.error(e)} 
-            }
+            this.deleteScratchProjectEntry(proj.scratchId)
+            // delete this.scratchprojects[proj.scratchId]
+            // let projectPatch = scratchprojectsPath + path.sep + sanitize(proj.scratchId + '');
+            // if(fs.existsSync(projectPatch)) {
+            //     try{ fs.rmSync(projectPatch) } catch(e){console.error(e)} 
+            // }
         })
 
         if(project.owner.toLowerCase() == user.toLowerCase()) {
@@ -560,9 +564,43 @@ export default class SessionManager{
     }
 
     getScratchToBLProject(scratchId) {
-        let blId = this.scratchprojects[scratchId]?.blId
+        let blId = this.getScratchProjectEntry(scratchId)?.blId
         if(!blId) {return null}
         return this.getProject(blId)
+    }
+
+    getScratchProjectEntry(scratchId) {
+        try{
+        if(!scratchId) {return}
+        let scratchIdFilename = sanitize(scratchId + '');
+        let filename = scratchprojectsPath + path.sep + scratchIdFilename;
+        if(!fs.existsSync(filename)) {return null}
+        let file = fs.readFileSync(filename)
+        let entry = JSON.parse(file)
+        return entry;
+        } catch (e) {console.error(e)}
+    }
+    makeScratchProjectEntry(scratchId,owner,blId) {
+        try{
+        if(!scratchId) {return}
+        let scratchIdFilename = sanitize(scratchId + '');
+        let filename = scratchprojectsPath + path.sep + scratchIdFilename;
+        let entry = {owner,blId}
+        let fileData = JSON.stringify(entry)
+        fs.writeFileSync(filename,fileData)
+        } catch (e) {console.error(e)}
+    }
+    doesScratchProjectEntryExist(scratchId) {
+        if(!scratchId) {return false}
+        let scratchIdFilename = sanitize(scratchId + '');
+        let filename = scratchprojectsPath + path.sep + scratchIdFilename;
+        return fs.existsSync(filename)
+    }
+    deleteScratchProjectEntry(scratchId) {
+        if(!scratchId) {return}
+        let scratchIdFilename = sanitize(scratchId + '');
+        let filename = scratchprojectsPath + path.sep + scratchIdFilename;
+        fs.rmSync(filename);
     }
 
 }

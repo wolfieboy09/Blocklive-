@@ -10,20 +10,20 @@ app.use(cors({origin:'*'}))
 app.use(express.json({ limit: '5MB' }))
 import fsp from 'fs/promises'
 ////////////
-// import http from 'http'
-// const server = http.createServer(app);
+import http from 'http'
+const server = http.createServer(app);
 ////////////
 // copied from https://stackoverflow.com/questions/11804202/how-do-i-setup-a-ssl-certificate-for-an-express-js-server
-import os from 'os'
-import path from 'path';
-let homedir = '/home/opc'
-let privateKey = fs.readFileSync( homedir + path.sep + 'letsencrypt/live/spore.us.to/privkey.pem' );
-let certificate = fs.readFileSync( homedir + path.sep + 'letsencrypt/live/spore.us.to/fullchain.pem' );
-import https from 'https'
-const server = https.createServer({
-     key: privateKey,
-     cert: certificate,
-},app);
+// import os from 'os'
+// import path from 'path';
+// let homedir = '/home/opc'
+// let privateKey = fs.readFileSync( homedir + path.sep + 'letsencrypt/live/spore.us.to/privkey.pem' );
+// let certificate = fs.readFileSync( homedir + path.sep + 'letsencrypt/live/spore.us.to/fullchain.pem' );
+// import https from 'https'
+// const server = https.createServer({
+//      key: privateKey,
+//      cert: certificate,
+// },app);
 /////////
 
 import {Server} from 'socket.io'
@@ -50,7 +50,7 @@ import { installCleaningJob } from './removeOldProjects.js';
 let sessionsObj = {}
 // sessionsObj.blocklive = loadMapFromFolder('storage/sessions/blocklive');
 sessionsObj.blocklive = {};
-sessionsObj.scratchprojects = loadMapFromFolder('storage/sessions/scratchprojects');
+// sessionsObj.scratchprojects = loadMapFromFolder('storage/sessions/scratchprojects');
 sessionsObj.lastId = fs.existsSync('storage/sessions/lastId') ? parseInt(fs.readFileSync('storage/sessions/lastId').toString()) : 0
 let banned = fs.existsSync('storage/banned') ? fs.readFileSync('storage/banned').toString().split('\n') : []
 console.log(sessionsObj)
@@ -61,9 +61,9 @@ var sessionManager = SessionManager.fromJSON(sessionsObj)
 Object.values(sessionManager.blocklive).forEach(project=>project.project.trimChanges())
 
 /// LOAD USER MANAGER
-var userManager = UserManager.fromJSON({users:loadMapFromFolder('storage/users')}) // load from users folder
+// var userManager = UserManager.fromJSON({users:loadMapFromFolder('storage/users')}) // load from users folder
 // var userManager = UserManager.fromJSON({users:JSON.parse(fs.readFileSync('storage/users.json'))}) // load from file users.json
-
+var userManager = new UserManager()
 
 // share projects from sessions db in users db
 // Object.values(sessionManager.blocklive).forEach(proj=>{
@@ -87,15 +87,15 @@ function sleep(millis) {
 function save() {
      sessionManager.offloadStaleProjects();
      saveMapToFolder(sessionManager.blocklive,blocklivePath);
-     saveMapToFolder(sessionManager.scratchprojects,scratchprojectsPath);
+     // saveMapToFolder(sessionManager.scratchprojects,scratchprojectsPath);
      fs.writeFileSync(lastIdPath,(sessionManager.lastId).toString());
-     saveMapToFolder(userManager.users,usersPath);
+     // saveMapToFolder(userManager.users,usersPath); // todo re-enstate
 }
 async function saveAsync() {
      console.log('saving now...')
      await sessionManager.offloadStaleProjectsAsync();
      await saveMapToFolderAsync(sessionManager.blocklive,blocklivePath);
-     await saveMapToFolderAsync(sessionManager.scratchprojects,scratchprojectsPath);
+     // await saveMapToFolderAsync(sessionManager.scratchprojects,scratchprojectsPath);
      await fsp.writeFile(lastIdPath,(sessionManager.lastId).toString());
      await saveMapToFolderAsync(userManager.users,usersPath);
 }
@@ -207,10 +207,12 @@ app.post('/newProject/:scratchId/:owner',(req,res)=>{
 })
 
 app.get('/blId/:scratchId',(req,res)=>{
-     res.send(sessionManager.scratchprojects[req.params.scratchId]?.blId)
+     // res.send(sessionManager.scratchprojects[req.params.scratchId]?.blId)
+     res.send(sessionManager.getScratchProjectEntry(req.params.scratchId)?.blId)
 })
 app.get('/blId/:scratchId/:uname',(req,res)=>{
-     let blId = sessionManager.scratchprojects[req.params.scratchId]?.blId
+     // let blId = sessionManager.scratchprojects[req.params.scratchId]?.blId
+     let blId = sessionManager.getScratchProjectEntry(req.params.scratchId)?.blId
      if(!blId) {res.send(blId); return;}
      let project = sessionManager.getProject(blId)
      if(!project) {res.send(blId); return;}
@@ -219,8 +221,8 @@ app.get('/blId/:scratchId/:uname',(req,res)=>{
      res.send(hasAccess ? blId : null);
 })
 app.get('/scratchIdInfo/:scratchId',(req,res)=>{
-     if (req.params.scratchId in sessionManager.scratchprojects) {
-          res.send(sessionManager.scratchprojects[req.params.scratchId])
+     if (sessionManager.doesScratchProjectEntryExist(req.params.scratchId)) {
+          res.send(sessionManager.getScratchProjectEntry(req.params.scratchId))
      } else {
           res.send({err:('could not find blocklive project associated with scratch project id: ' + req.params.scratchId)})
      }

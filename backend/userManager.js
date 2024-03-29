@@ -7,14 +7,21 @@
 //  scratch id (pk- "primary key")
 //
 
+import sanitize from "sanitize-filename"
+import { saveMapToFolder, usersPath } from "./filesave.js"
+import path from 'path'
+import fs from 'fs'
+
+const OFFLOAD_TIMEOUT_MILLIS = 30 * 1000
 
 export default class UserManager {
 
-    static fromJSON(json) {
-        let thing = new UserManager()
-        thing.users = json.users
-        return thing
-    }
+    // removed since dynamic reloading/offloading
+    // static fromJSON(json) {
+    //     let thing = new UserManager()
+    //     thing.users = json.users
+    //     return thing
+    // }
 
     users = {}
 
@@ -33,6 +40,16 @@ export default class UserManager {
     }
 
     getUser(username) {
+
+ // clear previous timeout
+ clearTimeout(this.offloadTimeoutIds[username]);
+ delete this.offloadTimeoutIds[username]
+ // set new timeout
+ let timeout = setTimeout(()=>{this.offloadUser(username)},OFFLOAD_TIMEOUT_MILLIS)
+ this.offloadTimeoutIds[username] = timeout
+
+
+        this.reloadUser(username)
         if(!(username?.toLowerCase() in this.users)) {
             this.addUser(username) 
         }
@@ -40,10 +57,42 @@ export default class UserManager {
     }
 
     addUser(username) {
+        this.reloadUser(username)
         if(!(username?.toLowerCase() in this.users)) {
             this.users[username.toLowerCase()] = {username,friends:[],token:this.token(),sharedTo:{},myProjects:[]} // 🚨
         }
         return this.getUser(username)
+    }
+
+    offloadTimeoutIds = {}
+
+    reloadUser(username) {
+        console.log(`reloading user ${username}`)
+        if(!username?.toLowerCase) {console.error(`username is not string ${username}`); console.trace(); return} // username is not a string
+        username=username.toLowerCase()
+
+        if(!(username in this.users)) {
+            let usernameFile=sanitize(username+'');
+            let filename = usersPath + path.sep + usernameFile;
+
+            if(!fs.existsSync(filename)) {return}
+
+            let json = fs.readFileSync(filename)
+            let user = JSON.parse(json)
+            this.users[username] = user;
+
+         
+        }
+    }
+    offloadUser(username) {
+        console.log(`offloading user ${username}`)
+        if(!username?.toLowerCase) {console.error(`username is not string ${username}`); console.trace(); return} // username is not a string
+        username=username.toLowerCase()
+        if(!(username in this.users)) {return;}
+        let usersSave={}
+        usersSave[username] = this.users[username] // get user object to save
+        delete this.users[username] // delete from ram
+        saveMapToFolder(usersSave,usersPath) // write file
     }
 
     newProject(owner,blId) {
@@ -71,6 +120,8 @@ export default class UserManager {
         if(ownedIndex != -1) {
             this.getUser(username)?.myProjects.splice(ownedIndex,1)
         }
+
+
 
     }
     getSharedObjects(username) {
