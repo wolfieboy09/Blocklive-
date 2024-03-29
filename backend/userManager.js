@@ -67,11 +67,12 @@ export default class UserManager {
     offloadTimeoutIds = {}
 
     reloadUser(username) {
-        console.log(`reloading user ${username}`)
         if(!username?.toLowerCase) {console.error(`username is not string ${username}`); console.trace(); return} // username is not a string
         username=username.toLowerCase()
 
         if(!(username in this.users)) {
+            console.log(`reloading user ${username}`)
+
             let usernameFile=sanitize(username+'');
             let filename = usersPath + path.sep + usernameFile;
 
