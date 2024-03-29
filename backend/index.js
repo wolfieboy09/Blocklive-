@@ -10,20 +10,20 @@ app.use(cors({origin:'*'}))
 app.use(express.json({ limit: '5MB' }))
 import fsp from 'fs/promises'
 ////////////
-import http from 'http'
-const server = http.createServer(app);
+// import http from 'http'
+// const server = http.createServer(app);
 ////////////
 // copied from https://stackoverflow.com/questions/11804202/how-do-i-setup-a-ssl-certificate-for-an-express-js-server
-// import os from 'os'
-// import path from 'path';
-// let homedir = '/home/opc'
-// let privateKey = fs.readFileSync( homedir + path.sep + 'letsencrypt/live/spore.us.to/privkey.pem' );
-// let certificate = fs.readFileSync( homedir + path.sep + 'letsencrypt/live/spore.us.to/fullchain.pem' );
-// import https from 'https'
-// const server = https.createServer({
-//      key: privateKey,
-//      cert: certificate,
-// },app);
+import os from 'os'
+import path from 'path';
+let homedir = '/home/opc'
+let privateKey = fs.readFileSync( homedir + path.sep + 'letsencrypt/live/spore.us.to/privkey.pem' );
+let certificate = fs.readFileSync( homedir + path.sep + 'letsencrypt/live/spore.us.to/fullchain.pem' );
+import https from 'https'
+const server = https.createServer({
+     key: privateKey,
+     cert: certificate,
+},app);
 /////////
 
 import {Server} from 'socket.io'
