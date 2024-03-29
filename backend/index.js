@@ -92,12 +92,24 @@ function save() {
      // saveMapToFolder(userManager.users,usersPath); // todo re-enstate
 }
 async function saveAsync() {
+     if(isFinalSaving) {return} // dont final save twice
+
      console.log('saving now...')
-     await sessionManager.offloadStaleProjectsAsync();
+     await fsp.writeFile(lastIdPath,(sessionManager.lastId).toString());
+     // await sessionManager.offloadStaleProjectsAsync(); // now they automatically offload
      await saveMapToFolderAsync(sessionManager.blocklive,blocklivePath);
      // await saveMapToFolderAsync(sessionManager.scratchprojects,scratchprojectsPath);
-     await fsp.writeFile(lastIdPath,(sessionManager.lastId).toString());
      await saveMapToFolderAsync(userManager.users,usersPath);
+}
+let isFinalSaving = false;
+function finalSave() {
+     if(isFinalSaving) {return} // dont final save twice
+     isFinalSaving = true
+     console.log('final save')
+     fs.writeFileSync(lastIdPath,(sessionManager.lastId).toString());
+     sessionManager.finalSaveAllProjects(); // now they automatically offload
+     saveMapToFolder(userManager.users,usersPath);
+     process.exit()
 }
 saveMapToFolder(sessionManager.blocklive,blocklivePath)
 
@@ -439,10 +451,11 @@ console.log('listening on port ' + port)
 process.stdin.resume();//so the program will not close instantly
 
 async function exitHandler(options, exitCode) {
-     await saveAsync();
-    if (options.cleanup) console.log('clean');
-    if (exitCode || exitCode === 0) console.log(exitCode);
-    if (options.exit) process.exit();
+     if (options.cleanup) console.log('clean');
+     if (exitCode || exitCode === 0) console.log(exitCode);
+
+     if(options.exit) {finalSave();}
+
 }
 
 //do something when app is closing
