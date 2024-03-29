@@ -21,7 +21,7 @@ chrome.runtime.sendMessage({meta:"getUsernamePlus"},function(info){
 
 setTimeout(()=>{chrome.runtime.sendMessage({meta:"getUsernamePlus"},setSignedin)},1000)
 
-    document.querySelector('#listtitle').innerHTML = username + "'s Allow&nbsp;List"
+    document.querySelector('#listtitle').innerHTML = username + "'s Friends&nbsp;List"
 
 
     let alreadyAdded = {}

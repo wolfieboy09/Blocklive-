@@ -2131,7 +2131,7 @@ let shareDropdown = `
     <search style="display:flex;flex-direction: column; ">
         <text style="display:flex;flex-direction:column;align-self:  left;padding-top:5px;padding-bottom:5px;padding-left:4px; font-size: large;">
             Add Collaborators
-            <textt style="font-size:small; color:#ffffffb3; font-style:italic">Friends must add you on their list</textt>
+            <textt style="font-size:small; color:#ffffffb3; font-style:italic">They must add you as a friend</textt>
             </text>
         <input id='searchy' style="color:black; display: flex;  margin-bottom:10px; align-self: center;border-radius: 10px; border-style: none; width:190px; height:30px">
 
@@ -2555,7 +2555,8 @@ function makeRevertButton() {
     button.className = 'button_outlined-button_1bS__ menu-bar_menu-bar-button_3IDN0 community-button_community-button_2Lo_g'
     
     
-    button.style.marginLeft = '7px'
+    button.style.marginRight = '7px'
+    button.style.marginLeft = '-10px'
     button.style.paddingLeft = '7px'
     button.style.paddingRight = '7px'
     button.style.gap = '7px'
@@ -2740,7 +2741,6 @@ listenForObj("#app > div > div.gui_menu-bar-position_3U1T0.menu-bar_menu-bar_Jcu
 
    setTopbarButtonVisibility()
 
-   document.querySelector("span.menu-bar_tutorials-label_2tFBo").remove()
 
 
     showCachedOnlineUsers();
@@ -2783,7 +2783,10 @@ function addRevertButton() {
 
     // container.appendChild(button)
     // mystuff.after(button)
-    seeProjectPage.after(button)
+    seeProjectPage.before(button)
+
+// delete tutorials text
+   document.querySelector("span.menu-bar_tutorials-label_2tFBo").remove()
 
 }
 
