@@ -5,6 +5,8 @@ import sanitize from 'sanitize-filename';
 import { blocklivePath, saveMapToFolder, saveMapToFolderAsync, scratchprojectsPath } from './filesave.js';
 import {Blob} from 'node:buffer'
 
+const OFFLOAD_TIMEOUT_MILLIS = 45 * 1000 // you get two minutes before the project offloads
+
 class BlockliveProject {
 
     static fromJSON(json) {
@@ -355,6 +357,15 @@ export default class SessionManager{
             }
         })
     }
+    finalSaveAllProjects() {
+        Object.entries(this.blocklive).forEach(entry=>{
+            let project = entry[1]
+            let id = entry[0]
+            project.project.trimChanges(20)
+        })
+        saveMapToFolder(this.blocklive,blocklivePath)
+        this.blocklive = {}
+    }
     async offloadStaleProjectsAsync() {
         for (let entry of Object.entries(this.blocklive)){
             let project = entry[1]
@@ -363,6 +374,16 @@ export default class SessionManager{
                 project.project.trimChanges(20)
                 await this.offloadProjectAsync(id)
             }
+        }
+    }
+    offloadProjectIfStale(id) {
+        let project = this.blocklive[id];
+        if(!project) {return}
+        if(Object.keys(project.session.connectedClients).length == 0) {
+            project.project.trimChanges(20)
+            this.offloadProject(id)
+        } else {
+            this.renewOffloadTimeout(id)
         }
     }
     offloadProject(id) {
@@ -508,11 +529,24 @@ export default class SessionManager{
         // this.scratchprojects[scratchId] = {owner,blId:blockliveId}
     }
 
+    offloadTimeoutIds = {}
+    renewOffloadTimeout(blId) {
+         // clear previous timeout
+        clearTimeout(this.offloadTimeoutIds[blId]);
+        delete this.offloadTimeoutIds[blId]
+        // set new timeout
+        let timeout = setTimeout(()=>{this.offloadProjectIfStale(blId)},OFFLOAD_TIMEOUT_MILLIS)
+        this.offloadTimeoutIds[blId] = timeout
+
+    } 
+    
     getProject(blId) {
+        this.renewOffloadTimeout(blId)
         this.reloadProject(blId)
         return this.blocklive[blId]
     }
     async getProjectAsync(blId) { // untested attempt to avoid too many files open in node version 17.9.1
+        this.renewOffloadTimeout(blId)
         await this.reloadProject(blId)
         return this.blocklive[blId]
     }
@@ -597,6 +631,7 @@ export default class SessionManager{
         return fs.existsSync(filename)
     }
     deleteScratchProjectEntry(scratchId) {
+        console.log(`DELETING scratch project entry ${scratchId}`)
         if(!scratchId) {return}
         let scratchIdFilename = sanitize(scratchId + '');
         let filename = scratchprojectsPath + path.sep + scratchIdFilename;
