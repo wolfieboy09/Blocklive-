@@ -233,7 +233,11 @@ app.get('/blId/:scratchId/:uname',(req,res)=>{
      let blId = sessionManager.getScratchProjectEntry(req.params.scratchId)?.blId
      if(!blId) {res.send(blId); return;}
      let project = sessionManager.getProject(blId)
-     if(!project) {res.send(blId); return;}
+     if(!project) { // if the project doesnt exist, dont send it!!!
+          sessionManager.deleteScratchProjectEntry(req.params.scratchId)
+          res.send(null); 
+          return;
+     }
      let hasAccess = ([...project.sharedWith,project.owner]).map(u=>u?.toLowerCase()).includes(req.params.uname?.toLowerCase());
      if(req.params.uname=='ilhp10' || req.params.uname=='rgantzos') {hasAccess = true;}
      res.send(hasAccess ? blId : null);

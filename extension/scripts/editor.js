@@ -128,7 +128,7 @@ async function startBlocklive(creatingNew) {
         console.log('project already loaded!')
         if(projectReplaceInitiated) { return }
         await joinExistingBlocklive(blId)
-        pauseEventHandling = false
+        pauseEventHandling = false;
     } else {
         vm.runtime.on("PROJECT_LOADED", async () => { // todo catch this running after project loads
             if(projectReplaceInitiated) { return }
@@ -174,8 +174,12 @@ async function joinExistingBlocklive(id) {
     let inpoint = await getJson(id)
 
     let projectJson = inpoint.json;
-    if(inpoint.err) {alert('issue joining blocklive id: ' + id + '\n error: ' + inpoint.err);
-        finishBLLoadingAnimation()
+    if(inpoint.err) {
+        alert('issue joining blocklive id: ' + id + '\n error: ' + inpoint.err);
+        finishBLLoadingAnimation();
+        pauseEventHandling = false;
+        vm.refreshWorkspace();
+        removeBlockliveButtons()
         return;
     }
     pauseEventHandling = true
@@ -199,6 +203,17 @@ async function joinExistingBlocklive(id) {
     liveMessage({meta:"joinSession"}) // join sessionManager session
     readyToRecieveChanges = true
     pauseEventHandling = false;
+}
+
+function removeBlockliveButtons() {
+    try{
+
+        document.querySelector("#app > div > div.gui_menu-bar-position_3U1T0.menu-bar_menu-bar_JcuHF.box_box_2jjDp > div.menu-bar_main-menu_3wjWH > blocklivecontainer")?.remove()
+        document.querySelector("blocklive-init")?.remove()
+        document.querySelector("#noRefreshPanel")?.remove()
+        document.querySelector("#blUsersPanel")?.remove()
+        document.querySelector("#bl-chat")?.remove()
+    } catch(e) {console.error(e)}
 }
 
 function getBlocklyId(scratchId) {
