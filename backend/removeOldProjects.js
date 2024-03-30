@@ -12,7 +12,7 @@ function sleep(millis) {
 let inprog=false;
 export function installCleaningJob(sessionManager, userManager) {
     // removeOldProjectsAsync(sessionManager, userManager);
-    removeUntetheredScratchprojects(sessionManager,userManager)
+    // removeUntetheredScratchprojects(sessionManager,userManager)
     cron.schedule(CRON_EXPRESSION, async () => {
         if(inprog) {return} // dont do it twice
         inprog=true;
