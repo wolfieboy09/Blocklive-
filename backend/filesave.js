@@ -25,14 +25,17 @@ export function saveMapToFolder(obj, dir) {
     let promises = []
     Object.entries(obj).forEach(entry=>{
      let stringg = JSON.stringify(entry[1])
-     if(stringg.length >= maxStringWriteLength && entry[1]?.project?.changes) {
+     if(stringg.length >= removeChangesStringLength && entry[1]?.project?.changes) {
           entry[1] = clone(entry[1],true,2)
           entry[1].project.changes=[]
           stringg = JSON.stringify(entry[1])
      } //max length is 524288
 
          entry[0] = sanitize(entry[0] + '')
-         if(entry[0] == '' || stringg.length > maxStringWriteLength) {return}
+         if(entry[0] == '' || stringg.length > maxStringWriteLength) {
+          console.error(`skipping writing project ${id} because its too long or noname`)
+          return
+     }
          let fd=null;
          try{
                let fd = fs.openSync(dir+path.sep+entry[0],'w')
@@ -46,7 +49,8 @@ export function saveMapToFolder(obj, dir) {
     })
 }
 
-const maxStringWriteLength = 514288;
+const removeChangesStringLength = 514280;
+const maxStringWriteLength = 51428000; //absolute max, hopefully never reached
 export async function saveMapToFolderAsync(obj, dir) {
      // if obj is null, return
      if(!obj) {console.warn('tried to save null object to dir: ' + dir); return}
@@ -54,18 +58,21 @@ export async function saveMapToFolderAsync(obj, dir) {
      if (!fs.existsSync(dir)){fs.mkdirSync(dir,{recursive:true})}
      let promises = []
      for (let entry of Object.entries(obj)) {
-          let stringg = JSON.stringify(entry[1]);
-          if(stringg.length >= maxStringWriteLength && entry[1]?.project?.changes) {
-               entry[1] = clone(entry[1],true,2)
-               entry[1].project.changes=[]
-               stringg = JSON.stringify(entry[1])
+          let id = sanitize(entry[0] + '')
+          let contentsObject = entry[1]
+          let stringg = JSON.stringify(contentsObject);
+          if(stringg.length >= removeChangesStringLength && contentsObject?.project?.changes) {
+               contentsObject = clone(contentsObject,true,2)
+               contentsObject.project.changes=[]
+               stringg = JSON.stringify(contentsObject)
           } //max length is 524288
 
-          entry[0] = sanitize(entry[0] + '')
-          if(entry[0] == '' || stringg.length >= maxStringWriteLength) {return}
-          let file = await fsp.open(dir+path.sep+entry[0],'w')
-          await fsp.writeFile(file,stringg).catch(e=>{console.error('Error when saving filename:'),console.error(e)});
-          await file.close()
+          if(!id || stringg.length >= maxStringWriteLength) {
+               console.error(`skipping writing project ${id} because its too long or noname`)
+               return
+          }
+          let filename = dir+path.sep+id;
+          await fsp.writeFile(filename,stringg).catch(e=>{console.error('Error when saving filename:');console.error(e)})
      }
  }
 export function loadMapFromFolder(dir) {
