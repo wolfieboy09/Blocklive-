@@ -14,6 +14,7 @@ let queryList = []
 let bl_projectId = null
 store = null
 let playAfterDragStop = []
+let finishedSavingCB = []
 function mutationCallback() {
     if(typeof BL_UTILS == 'object'){
         if(!BL_UTILS.isDragging() && playAfterDragStop.length > 0) {
@@ -70,6 +71,7 @@ var port
 var isConnected = false;
 
 function liveMessage(message,res) {
+    if(blockliveDeleted) {return}
     reconnectIfNeeded()
     let msg = message
     if(msg.meta=="blockly.event" || msg.meta=="sprite.proxy"||msg.meta=="vm.blockListen"||msg.meta=="vm.shareBlocks" ||msg.meta=="vm.replaceBlocks" ||msg.meta=="vm.updateBitmap"||msg.meta=="vm.updateSvg" ||msg.meta=="version++") {
@@ -81,6 +83,7 @@ function liveMessage(message,res) {
 let blockliveListener
 
 let registerChromePortListeners = ()=> {
+    if(blockliveDeleted) {return}
     port.onMessage.addListener((...args)=>{blockliveListener(...args)});
     port.onDisconnect.addListener(()=>{
         isConnected = false;
@@ -89,6 +92,7 @@ let registerChromePortListeners = ()=> {
 // registerChromePortListeners()
 
 function reconnectIfNeeded() {
+    if(blockliveDeleted) {return}
     if(!isConnected) {
         port = chrome.runtime.connect(exId); 
         isConnected = (!!port); 
@@ -116,7 +120,9 @@ let onceProjectLoaded = []
 let vm
 let readyToRecieveChanges = false
 
+let reloadAfterRestart=false
 async function startBlocklive(creatingNew) {
+    blockliveDeleted=false;
     pauseEventHandling = true
     liveMessage({meta:"myId",id:blId})
     injectLoadingOverlay()
@@ -141,6 +147,7 @@ async function startBlocklive(creatingNew) {
     }
 }
 
+let blockliveDeleted=false;
 async function onTabLoad() {
     // Get usable scratch id
     // await waitFor(()=>{!isNaN(parseFloat(location.pathname.split('/')[2]))})
@@ -205,14 +212,26 @@ async function joinExistingBlocklive(id) {
     pauseEventHandling = false;
 }
 
+function unshareBlocklive() {
+    chrome.runtime.sendMessage(exId,{meta:'leaveScratchId',scratchId});
+    removeBlockliveButtons();
+    blockliveDeleted=true;
+    port.disconnect()
+}
+
 function removeBlockliveButtons() {
     try{
 
-        document.querySelector("#app > div > div.gui_menu-bar-position_3U1T0.menu-bar_menu-bar_JcuHF.box_box_2jjDp > div.menu-bar_main-menu_3wjWH > blocklivecontainer")?.remove()
-        document.querySelector("blocklive-init")?.remove()
+        // document.querySelector("#app > div > div.gui_menu-bar-position_3U1T0.menu-bar_menu-bar_JcuHF.box_box_2jjDp > div.menu-bar_main-menu_3wjWH > blocklivecontainer")?.remove()
+        document.querySelector("#blRevert")?.remove()
         document.querySelector("#noRefreshPanel")?.remove()
         document.querySelector("#blUsersPanel")?.remove()
         document.querySelector("#bl-chat")?.remove()
+
+        blDropdown.style.display = 'none';
+        blockliveButton.onclick = blActivateClick
+        blId=null;
+
     } catch(e) {console.error(e)}
 }
 
@@ -294,6 +313,7 @@ setInterval(reconnectIfNeeded,1000)
 /// other things
 
     blockliveListener = async (msg) => {
+        if(blockliveDeleted) {return}
         if(typeof BL_UTILS != 'undefined' && BL_UTILS.isDragging()) {
             // dong add to list if its a move event on the current moving block
             if(msg.meta == 'vm.blockListen' && msg.type == 'move' && msg.event.blockId == BL_UTILS.getDraggingId()) {return}
@@ -467,17 +487,22 @@ BL_UTILS.stageName = stageName
 let lastProjectState = store.getState().scratchGui.projectState.loadingState
 let lastTitle = store.getState().preview.projectInfo.title
 let settingTitle = null
+
 store.subscribe(function() {
     // HANDLE PROJECT SAVE
     let state = store.getState().scratchGui.projectState.loadingState
     if(lastProjectState != state) { // If state changed
         lastProjectState = store.getState().scratchGui.projectState.loadingState
-
+        console.log('state '+state)
         if(state.endsWith('UPDATING')) {
             console.log('🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢')
             chrome.runtime.sendMessage(exId,{meta:'projectSavedJSON',blId,json:vm.toJSON(),version:blVersion,})
             // chrome.runtime.sendMessage(exId,{meta:'projectSaved',blId,scratchId,version:blVersion})
         }
+        try{
+        if(state == 'SHOWING_WITH_ID') {
+            finishedSavingCB.forEach((func)=>{func()})
+        }}catch(e){console.error(e)}
     }
 
     // HANDLE TITLE CHANGE
@@ -2127,7 +2152,8 @@ let shareDropdown = `
 
 <sharedWith style="display:flex;flex-direction: column;">
         <text style="display:flex;align-self: left;padding-left:4px; padding-top:5px;padding-bottom:5px;font-size: large;">
-            Shared With
+            Shared With 
+            <unshare style="font-size:14px !important; align-self:center; margin-left:38px; justify-self:end; text-decoration:underline; color:blue;  cursor:pointer; padding:2px; background-color:rgba(255,255,255,0.1); border-radius:5px;" onclick="unshareBlocklive()">Unshare</unshare>
         </text>
         <sharedList  style="overflow: auto; max-height: 350px; display:flex; min-height: 20px; border-radius:10px;gap:5px;flex-direction: column;  ">
             <cell id="blModalExample" style="display:none; gap:10px;flex-direction: row; align-items: center;">
@@ -2168,7 +2194,10 @@ let shareDropdown = `
                 
             </cell>
         </results>
+
+   
     </search>
+
     </div>
     </container>
 
@@ -2567,6 +2596,7 @@ function makeBlockliveButton() {
 }
 function makeRevertButton() {
     let button = document.createElement('blocklive-init')
+    button.id='blRevert'
     button.className = 'button_outlined-button_1bS__ menu-bar_menu-bar-button_3IDN0 community-button_community-button_2Lo_g'
     
     
@@ -2637,6 +2667,17 @@ function addToCredits(text) {
 }
 
 let blActivateClick = async ()=>{
+
+    if(blockliveDeleted) {reloadAfterRestart=true} //todo write code so that it can do this without restarting
+    if(reloadAfterRestart){
+        finishedSavingCB.push(()=>{location.reload()})
+        //stop spinny
+        document.querySelector('loader.blockliveloader').style.display = 'none'
+        reloadOnlineUsers()
+
+        blShareClick()
+    }
+    
     // change onclick
     blockliveButton.onclick = undefined
     // set spinny icon
@@ -2652,6 +2693,8 @@ let blActivateClick = async ()=>{
 
     chrome.runtime.sendMessage(exId,{json,meta:'create',scratchId,title:store.getState().preview.projectInfo.title},async (response)=>{
         blId = response.id 
+
+   
 
         // ACTIVATE BLOKLIVE!!!
         projectReplaceInitiated = true;
@@ -2674,6 +2717,7 @@ let blActivateClick = async ()=>{
         reloadOnlineUsers()
 
         blShareClick()
+
     })
 }
 let blShareClick = ()=>{console.log('clicked'); blDropdown.style.display = (blDropdown.style.display == 'none' ? 'flex' : 'none'); refreshShareModal() }
