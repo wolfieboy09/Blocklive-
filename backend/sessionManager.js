@@ -673,10 +673,10 @@ export default class SessionManager {
         let stats = {
             totalActiveProjects:0,
             totalProjectsMoreThan1Editor:0,
-            usersActive:[],
             usersActiveCount:0,
-            usersActiveMoreThan1Editor:[],
             usersActiveMoreThan1EditorCount:0,
+            usersActive:[],
+            usersActiveMoreThan1Editor:[],
             maxInOneProject:{
                 id:0,
                 num:0,
