@@ -74,6 +74,8 @@ export default class UserManager {
             console.log(`reloading user ${username}`)
 
             let usernameFile=sanitize(username+'');
+            if(!usernameFile) {return;} // dont do anything if username doesnt exist
+
             let filename = usersPath + path.sep + usernameFile;
 
             if(!fs.existsSync(filename)) {return}
