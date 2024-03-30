@@ -647,6 +647,7 @@ export default class SessionManager {
     deleteScratchProjectEntry(scratchId) {
         console.log(`DELETING scratch project entry ${scratchId}`)
         if (!scratchId) { return }
+        if(!doesScratchProjectEntryExist(scratchId)) {return}
         let scratchIdFilename = sanitize(scratchId + '');
         let filename = scratchprojectsPath + path.sep + scratchIdFilename;
         fs.rmSync(filename);
