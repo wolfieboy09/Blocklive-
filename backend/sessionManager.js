@@ -704,9 +704,9 @@ export default class SessionManager {
             } catch (e) { console.error(e) }
         })
         stats.usersActive = Array.from(set1);
-        // stats.usersActiveMoreThan1Editor = Array.from(set2);
+        let oldUsersActiveMoreThan1Editor = Array.from(set2);
         stats.usersActiveCount = stats.usersActive.length
-        stats.usersActiveMoreThan1EditorCount = stats.usersActiveMoreThan1Editor.length
+        stats.usersActiveMoreThan1EditorCount = oldUsersActiveMoreThan1Editor.length
         return stats;
     }
 
