@@ -44,7 +44,7 @@ import { postText } from './discord-webhook.js';
 import { installCleaningJob } from './removeOldProjects.js';
 
 
-const restartMessage = 'Blocklive server is restarting, you may lose connection for a few seconds.'
+const restartMessage = 'An admin is restarting the blocklive server, you may lose connection for a few seconds.'
 // Load session and user manager objects
 
 
