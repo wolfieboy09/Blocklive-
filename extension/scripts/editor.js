@@ -198,7 +198,7 @@ async function joinExistingBlocklive(id) {
         blVersion = inpoint.version
     } catch (e) {
         finishBLLoadingAnimation()
-        prompt(`Scratch couldn't load the project JSON we had saved for this project. Clicking OK or EXIT will attempt to load the project from the changelog, which may take a moment. \n\nSend this blocklive id to @ilhp10 on scratch:`,`${blId};`)
+        prompt(`Scratch couldn't load the project JSON we had saved for this project. Clicking OK or EXIT will attempt to load the project from the changelog, which may take a moment. \nError: \n${e} \n\nSend this blocklive id to @ilhp10 on scratch:`,`${blId};`)
         startBLLoadingAnimation()
         // prompt(`Blocklive cannot load project data! The scratch api might be blocked by your network. Clicking OK or EXIT will attempt to load the project from the changelog, which may take a moment. \n\nHere are your ids if you want to report this to @ilhp10:`,`BLOCKLIVE_ID: ${blId}; SCRATCH_REAL_ID: ${scratchId}; INPOINT_ID: ${inpoint.scratchId}`)
     }
@@ -443,6 +443,13 @@ function getWorkspace() {
     })
     return retVal;
 }
+function getFlyout() {
+    if(typeof ScratchBlocks == 'undefined') {return null}
+    Object.entries(ScratchBlocks.Workspace.WorkspaceDB_).forEach(wkv=>{
+        if(wkv[1].isFlyout /*&& wkv[1].deleteAreaToolbox_*/) {retVal = wkv[1]}
+    })
+    return retVal;
+}
 function getWorkspaceId() {
     return getWorkspace()?.id
 }
@@ -475,6 +482,7 @@ const getSelectedCostumeIndex = () => {
 BL_UTILS = {
     isWorkspaceAccessable,
     getWorkspace,
+    getFlyout,
     getWorkspaceId,
     getDraggingId, isDragging,
     targetToName,
@@ -1117,6 +1125,7 @@ function onBlockRecieve(d) {
 }
 
 let oldTargUp = vm.emitTargetsUpdate.bind(vm)
+// window.BL_UTILS.unsafeTargetsUpdate=oldTargUp;
 window.etuListeners = []
 vm.emitTargetsUpdate = function(...args) {
     etuListeners.forEach(e=>{try{e?.()}catch(e){console.error(e)}})
@@ -1931,10 +1940,23 @@ vm.deleteSprite = proxy(vm.deleteSprite,"deletesprite",
 vm.renameSprite = proxy(vm.renameSprite,"renamesprite",
     (args)=>({oldName:targetToName(vm.runtime.getTargetById(args[0]))}),
     (data)=>[nameToTarget(data.extrargs.oldName).id,data.args[1]])
-vm.reorderTarget = proxy(vm.reorderTarget,"reordertarget")
+vm.reorderTarget = proxy(vm.reorderTarget,"reordertarget");
 // vm.shareBlocksToTarget = proxy(vm.shareBlocksToTarget,"shareblocks",
 // (args)=>({toName:vm.runtime.getTargetById(args[1]).sprite.name}),
 // (data)=>[data.args[0],vm.runtime.getSpriteTargetByName(data.extrargs.toName).id],null,()=>{vm.emitWorkspaceUpdate()})
+let oldVmSetCloudProvider = vm.setCloudProvider.bind(vm);
+vm.setCloudProvider = function(that) {
+    if(!!that) {
+        console.log('PROVIDER SET', that)
+        that.projectId = blId
+    }
+    oldVmSetCloudProvider(that)
+}
+function connectToBlockliveCloud() {
+    if(!blId) {return}
+    vm.runtime.ioDevices.cloud.provider.projectId = blId
+    vm.runtime.ioDevices.cloud.provider.openConnection()
+}
 
 let shareCreates = []
 let lastDeletedBlock
