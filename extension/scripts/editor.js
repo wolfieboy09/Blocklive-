@@ -298,7 +298,6 @@ async function activateBlocklive() {
             console.log('queing it for later')
             playAfterDragStop.push({meta:'resyncCached',changes})
         } else {
-            BL_UTILS.getWorkspace().toolboxRefreshEnabled_ = true
             await playChanges(changes)
         }    
     }
@@ -488,7 +487,11 @@ function refreshFlyout() {
     // update flyout for new variables and blocks
     if(!BL_UTILS.isWorkspaceAccessable()){return}
     BL_UTILS.getWorkspace().getToolbox().refreshSelection()
-    setTimeout(()=>{BL_UTILS.getWorkspace().toolboxRefreshEnabled_ = true},130);
+    setTimeout(()=>{
+        if(BL_UTILS.isWorkspaceAccessable()) {
+            BL_UTILS.getWorkspace().toolboxRefreshEnabled_ = true
+        }
+    },130);
 }
 BL_UTILS = {
     isWorkspaceAccessable,
@@ -1959,6 +1962,7 @@ vm.reorderTarget = proxy(vm.reorderTarget,"reordertarget");
 // (data)=>[data.args[0],vm.runtime.getSpriteTargetByName(data.extrargs.toName).id],null,()=>{vm.emitWorkspaceUpdate()})
 let oldVmSetCloudProvider = vm.setCloudProvider.bind(vm);
 vm.setCloudProvider = function(that) {
+    if(store?.getState()?.preview.projectInfo.is_published) {return}
     if(!!that) {
         console.log('PROVIDER SET', that)
         that.projectId = blId
