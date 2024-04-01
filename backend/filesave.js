@@ -33,7 +33,7 @@ export function saveMapToFolder(obj, dir) {
 
          entry[0] = sanitize(entry[0] + '')
          if(entry[0] == '' || stringg.length > maxStringWriteLength) {
-          console.error(`skipping writing project ${id} because its too long or noname`)
+          console.error(`skipping writing file "${entry[0]}" because its too long or noname`)
           return
      }
          let fd=null;
