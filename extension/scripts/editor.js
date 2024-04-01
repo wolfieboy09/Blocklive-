@@ -139,7 +139,7 @@ async function startBlocklive(creatingNew) {
         vm.runtime.on("PROJECT_LOADED", async () => { // todo catch this running after project loads
             if(projectReplaceInitiated) { return }
             await joinExistingBlocklive(blId)
-            pauseEventHandling = false
+            pauseEventHandling = false;
         })
     }
     if(creatingNew) {
@@ -210,6 +210,10 @@ async function joinExistingBlocklive(id) {
     liveMessage({meta:"joinSession"}) // join sessionManager session
     readyToRecieveChanges = true
     pauseEventHandling = false;
+    // hackyRefreshFlyoutVariables()
+
+    setTimeout(BL_UTILS.refreshFlyout,100) // todo figure way other than timeout
+
 }
 
 function unshareBlocklive() {
@@ -294,9 +298,9 @@ async function activateBlocklive() {
             console.log('queing it for later')
             playAfterDragStop.push({meta:'resyncCached',changes})
         } else {
+            BL_UTILS.getWorkspace().toolboxRefreshEnabled_ = true
             await playChanges(changes)
-        }
-    
+        }    
     }
 
 ///.......... CONNECT TO CHROME PORT ..........//
@@ -479,6 +483,13 @@ const getSelectedCostumeIndex = () => {
     return +numberEl.textContent - 1;
 };
 
+function refreshFlyout() {
+    vm.emitWorkspaceUpdate()
+    // update flyout for new variables and blocks
+    if(!BL_UTILS.isWorkspaceAccessable()){return}
+    BL_UTILS.getWorkspace().getToolbox().refreshSelection()
+    setTimeout(()=>{BL_UTILS.getWorkspace().toolboxRefreshEnabled_ = true},130);
+}
 BL_UTILS = {
     isWorkspaceAccessable,
     getWorkspace,
@@ -488,7 +499,9 @@ BL_UTILS = {
     targetToName,
     nameToTarget,
     getSelectedCostumeIndex,
+    refreshFlyout,
 }
+
 BL_UTILS.stageName = stageName
 
 // send to api when project saved and name change
@@ -2012,6 +2025,8 @@ function doShareBlocksMessage(msg) {
     if(!isWorkspaceAccessable()){return}
     getWorkspace().getToolbox().refreshSelection()
 }
+
+
 
 // no sure what this does but it might be useful at some point this.editingTarget.fixUpVariableReferences();
 
