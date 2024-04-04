@@ -51,12 +51,16 @@ function leaveId(id, div) {
   div.remove()
 }
 
-function sendLeave(scratchId) {
+function sendLeave(scratchId,blId) {
   blMySTuff.splice(blMySTuff.findIndex(item=>(item.scratchId==scratchId)),1)
-  chrome.runtime.sendMessage(exId,{meta:'leaveScratchId',scratchId})
+  if(blId) {
+    chrome.runtime.sendMessage(exId,{meta:'leaveBlId',blId})
+  } else {
+    chrome.runtime.sendMessage(exId,{meta:'leaveScratchId',scratchId})
+  }
 }
 
-function getbox(title,scratchId,lastModified,lastModBy,projectExists) {
+function getbox(blId,title,scratchId,lastModified,lastModBy,projectExists) {
     return`
     <div class="media-item-content not-shared">
       <div class="media-thumb">
@@ -78,7 +82,7 @@ function getbox(title,scratchId,lastModified,lastModBy,projectExists) {
       </a>
       </div>
       <div class="media-action">
-	      <div><a class="media-trash" style="color:#ff4ad5" onclick="leaveId(${scratchId},this.parentElement.parentElement.parentElement.parentElement);sendLeave(${scratchId})">${projectExists ? "Unlink" : "Leave"}</a></div>
+	      <div><a class="media-trash" style="color:#ff4ad5" onclick="leaveId(${scratchId},this.parentElement.parentElement.parentElement.parentElement);sendLeave(${scratchId},${blId})">${projectExists ? "Unlink" : "Leave"}</a></div>
       </div>
     </div>`
 }
@@ -127,7 +131,7 @@ function convertToBlocklive(listItem,projectObj) {
     
     atts.buttonText = listItem.children[0].children[2].children[0].children[0].innerHTML
     listItem.children[0].children[2].children[0].children[0].innerHTML = 'Unlink'
-    listItem.children[0].children[2].children[0].children[0].onclick = ()=>{cleanseOfBlockliveness(projectObj.scratchId,listItem); sendLeave(projectObj.scratchId)}
+    listItem.children[0].children[2].children[0].children[0].onclick = ()=>{cleanseOfBlockliveness(projectObj.scratchId,listItem); sendLeave(projectObj.scratchId,projectObj.blId)}
     atts.title = listItem.children[0].children[1].children[0].children[0].innerHTML
     listItem.children[0].children[1].children[0].children[0].innerHTML = projectObj.title
 
@@ -150,7 +154,7 @@ function cleanseOfBlockliveness(scratchId, listItem) {
 
 function addProject(projectObj, projectExists) {
     let newBox = document.createElement('li')
-    newBox.innerHTML = getbox(projectObj.title,projectObj.scratchId,projectObj.lastTime,projectObj.lastUser,projectExists)
+    newBox.innerHTML = getbox(projectObj.blId,projectObj.title,projectObj.scratchId,projectObj.lastTime,projectObj.lastUser,projectExists)
     document.querySelector('ul.media-list').insertBefore(newBox,document.querySelector('ul.media-list').firstChild)
 }
 

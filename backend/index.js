@@ -407,7 +407,7 @@ app.get('/userProjectsScratch/:user',(req,res)=>{
           if(!project) {return null}
           projectObj.scratchId = project.getOwnersProject(req.params.user)?.scratchId
           if(!projectObj.scratchId) {projectObj.scratchId = project.scratchId}
-          projectObj.blockliveId = project.id;
+          projectObj.blId = project.id;
           projectObj.title = project.project.title
           projectObj.lastTime = project.project.lastTime
           projectObj.lastUser = project.project.lastUser

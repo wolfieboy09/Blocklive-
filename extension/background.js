@@ -367,6 +367,10 @@ chrome.runtime.onMessageExternal.addListener(
       fetch(`${apiUrl}/leaveScratchId/${request.scratchId}/${await refreshUsername()}`,{
         method:'PUT'
       })
+    } else if(request.meta == 'leaveBlId') {
+      fetch(`${apiUrl}/leaveBlId/${request.blId}/${await refreshUsername()}`,{
+        method:'PUT'
+      })
     } else if(request.meta == 'getActive') {
       sendResponse(await (await fetch(`${apiUrl}/active/${request.id}`)).json())
     }
