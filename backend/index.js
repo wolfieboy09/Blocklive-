@@ -88,6 +88,7 @@ function sleep(millis) {
      return new Promise(res=>setTimeout(res,millis))
 }
 function save() {
+     if(isFinalSaving) {return} // dont final save twice
      sessionManager.offloadStaleProjects();
      saveMapToFolder(sessionManager.blocklive,blocklivePath);
      // saveMapToFolder(sessionManager.scratchprojects,scratchprojectsPath);

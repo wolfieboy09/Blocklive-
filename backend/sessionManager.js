@@ -2,7 +2,7 @@ import fs from 'fs'
 import fsp from 'fs/promises'
 import path, { sep } from 'path';
 import sanitize from 'sanitize-filename';
-import { blocklivePath, saveMapToFolder, saveMapToFolderAsync, scratchprojectsPath } from './filesave.js';
+import { blocklivePath, lastIdPath, saveMapToFolder, saveMapToFolderAsync, scratchprojectsPath } from './filesave.js';
 import { Blob } from 'node:buffer'
 
 const OFFLOAD_TIMEOUT_MILLIS = 45 * 1000 // you get two minutes before the project offloads
@@ -534,7 +534,15 @@ export default class SessionManager {
     }
 
     getNextId() {
-        return ++this.lastId
+        this.lastId++;
+        this.tryWriteLastId()
+        return this.lastId
+    }
+
+    tryWriteLastId() {
+        try {
+            fs.writeFile(lastIdPath, this.lastId.toString(), () => { })
+        } catch (e) { console.error(e) }
     }
 
     // todo checking
@@ -647,7 +655,7 @@ export default class SessionManager {
     deleteScratchProjectEntry(scratchId) {
         console.log(`DELETING scratch project entry ${scratchId}`)
         if (!scratchId) { return }
-        if(!this.doesScratchProjectEntryExist(scratchId)) {return}
+        if (!this.doesScratchProjectEntryExist(scratchId)) { return }
         let scratchIdFilename = sanitize(scratchId + '');
         let filename = scratchprojectsPath + path.sep + scratchIdFilename;
         fs.rmSync(filename);
@@ -661,7 +669,7 @@ export default class SessionManager {
 
             try {
                 if (Object.keys(project.session.connectedClients).length > 0) {
-                    project.serverSendChat(message,from)
+                    project.serverSendChat(message, from)
                 }
             } catch (e) { console.error(e) }
         })
@@ -671,15 +679,15 @@ export default class SessionManager {
         let set1 = new Set();
         let set2 = new Set();
         let stats = {
-            totalActiveProjects:0,
-            totalProjectsMoreThan1Editor:0,
-            usersActiveCount:0,
-            usersActiveMoreThan1EditorCount:0,
-            usersActive:[],
-            usersActiveMoreThan1Editor:[],
-            maxInOneProject:{
-                id:0,
-                num:0,
+            totalActiveProjects: 0,
+            totalProjectsMoreThan1Editor: 0,
+            usersActiveCount: 0,
+            usersActiveMoreThan1EditorCount: 0,
+            usersActive: [],
+            usersActiveMoreThan1Editor: [],
+            maxInOneProject: {
+                id: 0,
+                num: 0,
             }
         }
         Object.entries(this.blocklive).forEach(entry => {
@@ -690,14 +698,14 @@ export default class SessionManager {
             try {
                 if (connectedUsernames.length > 0) {
                     stats.totalActiveProjects++;
-                    project.session.getConnectedUsernames().forEach(set1.add,set1)
+                    project.session.getConnectedUsernames().forEach(set1.add, set1)
                 }
                 if (connectedUsernames.length > 1) {
                     stats.totalProjectsMoreThan1Editor++;
-                    connectedUsernames.forEach(set2.add,set2)
+                    connectedUsernames.forEach(set2.add, set2)
                     stats.usersActiveMoreThan1Editor.push(connectedUsernames)
                 }
-                if(connectedUsernames.length > stats.maxInOneProject.num) {
+                if (connectedUsernames.length > stats.maxInOneProject.num) {
                     stats.maxInOneProject.num = Object.keys(project.session.connectedClients).length;
                     stats.maxInOneProject.id = project.id;
                 }
