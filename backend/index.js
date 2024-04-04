@@ -407,6 +407,7 @@ app.get('/userProjectsScratch/:user',(req,res)=>{
           if(!project) {return null}
           projectObj.scratchId = project.getOwnersProject(req.params.user)?.scratchId
           if(!projectObj.scratchId) {projectObj.scratchId = project.scratchId}
+          projectObj.blockliveId = project.id;
           projectObj.title = project.project.title
           projectObj.lastTime = project.project.lastTime
           projectObj.lastUser = project.project.lastUser
@@ -423,6 +424,13 @@ app.put('/leaveScratchId/:scratchId/:username',(req,res)=>{
      sessionManager.unshareProject(project.id, req.params.username)
      res.send('uncool beans!!!! /|/|/|')
 })
+app.put('/leaveBlId/:blId/:username',(req,res)=>{
+     // let project = sessionManager.getScratchToBLProject(req.params.scratchId)
+     userManager.unShare(req.params.username, req.params.blId)
+     sessionManager.unshareProject(req.params.blId, req.params.username)
+     res.send('uncool beans!!!! /|/|/|')
+})
+
 
 app.get('/share/:id',(req,res)=>{
      let project = sessionManager.getProject(req.params.id)
