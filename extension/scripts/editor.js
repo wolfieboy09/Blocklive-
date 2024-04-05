@@ -2194,7 +2194,7 @@ let shareDropdown = `
 <sharedWith style="display:flex;flex-direction: column;">
         <text style="display:flex;align-self: left;padding-left:4px; padding-top:5px;padding-bottom:5px;font-size: large;">
             Shared With 
-            <unshare style="font-size:14px !important; align-self:center; margin-left:38px; justify-self:end; text-decoration:underline; color:blue;  cursor:pointer; padding:2px; background-color:rgba(255,255,255,0.1); border-radius:5px;" onclick="unshareBlocklive()">Unshare</unshare>
+            <unshare style="font-size:14px !important; align-self:center; margin-left:38px; justify-self:end; text-decoration:underline; color:#ff5252;  cursor:pointer; padding:2px; background-color:rgba(0,0,0,0.1); border-radius:5px;" onclick="unshareBlocklive()">Unshare</unshare>
         </text>
         <sharedList  style="overflow: auto; max-height: 350px; display:flex; min-height: 20px; border-radius:10px;gap:5px;flex-direction: column;  ">
             <cell id="blModalExample" style="display:none; gap:10px;flex-direction: row; align-items: center;">
