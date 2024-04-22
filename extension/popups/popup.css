@@ -205,7 +205,10 @@ li:hover{
 
 
 
-
+.link{
+    align-items: center;
+    gap:3px;
+}
 /* credit */
 
 br{

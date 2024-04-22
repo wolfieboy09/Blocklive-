@@ -1962,8 +1962,7 @@ vm.reorderTarget = proxy(vm.reorderTarget,"reordertarget");
 // (data)=>[data.args[0],vm.runtime.getSpriteTargetByName(data.extrargs.toName).id],null,()=>{vm.emitWorkspaceUpdate()})
 let oldVmSetCloudProvider = vm.setCloudProvider.bind(vm);
 vm.setCloudProvider = function(that) {
-    if(store?.getState()?.preview.projectInfo.is_published) {return}
-    if(!!that) {
+    if(!store?.getState()?.preview.projectInfo.is_published && !!that) {
         console.log('PROVIDER SET', that)
         that.projectId = blId
     }
@@ -2194,7 +2193,7 @@ let shareDropdown = `
 <sharedWith style="display:flex;flex-direction: column;">
         <text style="display:flex;align-self: left;padding-left:4px; padding-top:5px;padding-bottom:5px;font-size: large;">
             Shared With 
-            <unshare style="font-size:14px !important; align-self:center; margin-left:38px; justify-self:end; text-decoration:underline; color:#ff5252;  cursor:pointer; padding:2px; background-color:rgba(0,0,0,0.1); border-radius:5px;" onclick="unshareBlocklive()">Unshare</unshare>
+            <unshare style="font-size:14px !important; align-self:center; margin-left:50px; justify-self:end; text-decoration:underline; color:#09004dd1;  cursor:pointer; padding:2px; background-color:rgba(255,255,255,0.15); border-radius:5px;" onclick="unshareBlocklive()">Unlink</unshare>
         </text>
         <sharedList  style="overflow: auto; max-height: 350px; display:flex; min-height: 20px; border-radius:10px;gap:5px;flex-direction: column;  ">
             <cell id="blModalExample" style="display:none; gap:10px;flex-direction: row; align-items: center;">
@@ -3469,6 +3468,10 @@ function dragElement(elmnt) {
 // msg: {text, sender}
 lastSender = ''
 uname = ''
+let pingUrl = "https://assets.scratch.mit.edu/internalapi/asset/cf51a0c4088942d95bcc20af13202710.wav/get/";
+// chrome.runtime.sendMessage(exId,{meta:'getPingUrl'},url=>{
+//     pingUrl = url;
+// });
 async function addMessage(msg, notif) {
     let msgsElem = document.querySelector('bl-chat-msgs')
     if(msg.sender != lastSender) {
@@ -3497,8 +3500,22 @@ async function addMessage(msg, notif) {
         if(!isChatOpen() || !document.hasFocus()) {
             liveMessage({meta:"chatnotif",project:store.getState().preview.projectInfo.title, sender:msg.sender, text:msg.text, avatar:(await getUserInfo(msg.sender)).pic})
         }
+        if(await isPingEnabled()) {
+            playSound(pingUrl)
+        }
     }
 }
+
+function isPingEnabled(){
+    return new Promise(ret=>
+        chrome.runtime.sendMessage(exId,{meta:'isPingEnabled'},ret)
+    )
+}
+function playSound(url) {
+    var a = new Audio(url);
+    a.play();
+}
+
 function postMessageBubble() {
     let inputElem = document.querySelector('bl-chat-input')
     let messageText = inputElem.innerText

@@ -79,6 +79,9 @@ setTimeout(()=>{chrome.runtime.sendMessage({meta:"getUsernamePlus"},setSignedin)
 document.getElementById('discord').onclick = ()=>{
     chrome.tabs.create({url: `https:\/\/discord.gg/9ZQQhvAvqp`});
 }
+document.getElementById('uptime').onclick = ()=>{
+    chrome.tabs.create({url: `https://status.uptime-monitor.io/6499c89d4bfb79bb5f20ac4d`});
+}
 document.getElementById('support').onclick = ()=>{
     chrome.tabs.create({url: `https://www.buymeacoffee.com/ilhp10`});
 }
@@ -110,6 +113,21 @@ document.querySelector('#notifs').addEventListener('change', (event) => {
       }
     });
   });
+  
+
+  /// request permissions
+(async()=>{
+    document.querySelector('#ping').checked = (await chrome.storage.local.get(['ping']))?.ping ?? false
+    })()
+    document.querySelector('#ping').addEventListener('change', (event) => {
+        let on = event.currentTarget.checked;
+        chrome.storage.local.set({ping:on})
+        // Permissions must be requested from inside a user gesture, like a button's
+        // click handler.
+
+      });
+      
+
   
 
 let logo = document.getElementById('logo')

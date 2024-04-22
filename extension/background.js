@@ -373,6 +373,10 @@ chrome.runtime.onMessageExternal.addListener(
       })
     } else if(request.meta == 'getActive') {
       sendResponse(await (await fetch(`${apiUrl}/active/${request.id}`)).json())
+    } else if(request.meta=='getPingUrl') {
+      sendResponse(await chrome.runtime.getURL("sounds/ping.mp3"))
+    } else if(request.meta=='isPingEnabled') {
+      sendResponse((await chrome.storage.local.get(['ping'])).ping )
     }
   });
 
