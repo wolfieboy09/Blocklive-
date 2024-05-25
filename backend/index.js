@@ -214,10 +214,9 @@ io.on('connection', (client) => {
                     if (!id) { break analytic }
                     let project = sessionManager.getProject(id);
                     if (!project) { break analytic }
-                    let sharedWith = [...project?.sharedWith, project?.owner];
-                    let connected = project.session?.getConnectedUsernames()
+                    let connected = project.session?.getConnectedUsernames();
                     connected?.forEach?.(username => {
-                         addRecent(username, connected.length>1, sharedWith.length>1)
+                         addRecent(username, connected.length>1, project.sharedWith.length)
                     })
                } catch (e) { console.error('error with analytic message tally'); console.error(e) }
           } else { console.log('discarded unknown mesage type: ' + data.type) }
