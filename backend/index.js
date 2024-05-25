@@ -90,14 +90,6 @@ var userManager = new UserManager()
 function sleep(millis) {
      return new Promise(res=>setTimeout(res,millis))
 }
-function save() {
-     if(isFinalSaving) {return} // dont final save twice
-     sessionManager.offloadStaleProjects();
-     saveMapToFolder(sessionManager.blocklive,blocklivePath);
-     // saveMapToFolder(sessionManager.scratchprojects,scratchprojectsPath);
-     fs.writeFileSync(lastIdPath,(sessionManager.lastId).toString());
-     // saveMapToFolder(userManager.users,usersPath); // todo re-enstate
-}
 async function saveAsync() {
      if(isFinalSaving) {return} // dont final save twice
 
