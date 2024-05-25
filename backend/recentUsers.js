@@ -24,7 +24,7 @@ export async function saveRecent() {
 }
 
 export function addRecent(username,realtime,shared) {
-    username=username?.toLowerCase()
+    username=username?.toLowerCase?.()
     recent[username] = Date.now()
     if(realtime) {
         recentRealtime[username] = Date.now()
