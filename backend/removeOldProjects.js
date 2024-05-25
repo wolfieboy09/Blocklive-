@@ -56,7 +56,7 @@ async function removeOldProjectsAsync(sessionManager, userManager) {
 
                             sessionManager.deleteProjectFile(id);
                         } else {
-                            project.project.trimChanges(20)
+                            project.trimChanges()
                             await sessionManager.offloadProjectAsync(id)
                         }
                     }

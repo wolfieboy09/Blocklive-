@@ -64,7 +64,6 @@ console.log(sessionsObj)
 // sessionsObj = JSON.parse(fs.readFileSync('storage/sessions.json')) // load sessions from file sessions.json
 
 var sessionManager = SessionManager.fromJSON(sessionsObj)
-Object.values(sessionManager.blocklive).forEach(project=>project.project.trimChanges())
 
 /// LOAD USER MANAGER
 // var userManager = UserManager.fromJSON({users:loadMapFromFolder('storage/users')}) // load from users folder
@@ -95,7 +94,9 @@ async function saveAsync() {
 
      console.log('saving now...')
      await fsp.writeFile(lastIdPath,(sessionManager.lastId).toString());
-     await saveMapToFolderAsync(sessionManager.blocklive,blocklivePath);
+     console.log('writing blocklives')
+     await saveMapToFolderAsync(sessionManager.blocklive,blocklivePath,true);
+     console.log('DONE writing blocklives')
      await saveMapToFolderAsync(userManager.users,usersPath);
      await saveRecent();
 }
@@ -149,8 +150,15 @@ let messageHandlers = {
      'getChanges':(data,client)=>{
           let project = sessionManager.getProject(data.id)
           if(!project) {return}
+         
+          let oldestChange = project.project.indexZeroVersion;
+          let clientVersion = data.version;
+          let jsonVersion = project.jsonVersion;
+          let forceReload = clientVersion<oldestChange-1 && jsonVersion>=oldestChange-1;
+
+
           let changes = project?.project.getChangesSinceVersion(data.version)
-          client.send({type:'projectChanges',changes,projectId:data.id,currentVersion:project.project.version})
+          client.send({type:'projectChanges',changes,forceReload,projectId:data.id,currentVersion:project.project.version})
      },
      'setTitle':(data,client)=>{
           let project = sessionManager.getProject(data.blId)
@@ -312,9 +320,30 @@ app.get('/changesSince/:id/:version',(req,res)=>{
      let project = sessionManager.getProject(req.params.id)
      if(!project) {res.send([])}
      else {
-          res.send(project.project.getChangesSinceVersion(parseFloat(req.params.version)))
+
+          let oldestChange = project.project.indexZeroVersion;
+          let clientVersion = req.params.version;
+          let jsonVersion = project.jsonVersion;
+          let forceReload = clientVersion<oldestChange-1 && jsonVersion>=oldestChange-1;
+          if(clientVersion<oldestChange-1 && jsonVersion<oldestChange-1) {console.error('client version too old AND json version too old. id,jsonVersion,clientVersion,indexZeroVersion',project.id,jsonVersion,clientVersion,oldestChange)}
+
+          let changes = project.project.getChangesSinceVersion(parseFloat(req.params.version));
+          if(forceReload) {
+               changes=buildMagicList(changes);
+               changes.forceReload=true;
+          }
+
+          res.send(changes)
      }
 })
+function buildMagicList(list) {
+     let output={length:list.length}
+     for(let i=0; i<list.length; i++) {
+          output[i]=list[i]
+     }
+     return output
+}
+
 app.get('/chat/:id/',(req,res)=>{
      let project = sessionManager.getProject(req.params.id)
      if(!project) {res.send([])}

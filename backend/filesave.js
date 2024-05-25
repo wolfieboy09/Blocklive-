@@ -51,7 +51,7 @@ export function saveMapToFolder(obj, dir) {
 
 const removeChangesStringLength = 514280;
 const maxStringWriteLength = 51428000; //absolute max, hopefully never reached
-export async function saveMapToFolderAsync(obj, dir) {
+export async function saveMapToFolderAsync(obj, dir, failsafeEh) {
      // if obj is null, return
      if(!obj) {console.warn('tried to save null object to dir: ' + dir); return}
      // make directory if it doesnt exist
@@ -66,6 +66,13 @@ export async function saveMapToFolderAsync(obj, dir) {
                contentsObject.project.changes=[]
                stringg = JSON.stringify(contentsObject)
           } //max length is 524288
+          if(failsafeEh) { // to speed up the saving process because we know that the actual save will write changes, and this is quick in case the server crashes
+               if(contentsObject?.project?.changes) {
+                    contentsObject = clone(contentsObject,false,2)
+                    contentsObject.project.changes=[]
+                    stringg = JSON.stringify(contentsObject)
+               }
+          }
 
           if(!id || stringg.length >= maxStringWriteLength) {
                console.error(`skipping writing project ${id} because its too long or noname`)

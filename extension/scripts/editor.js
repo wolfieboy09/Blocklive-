@@ -250,7 +250,7 @@ function getBlocklyId(scratchId) {
 function getJson(blockliveId) {
     return new Promise((res)=>{chrome.runtime.sendMessage(exId,{meta:'getJson',blId:blockliveId},res)})     
 }
-function getChanges(Id,version) {
+function getChanges(blId,version) {
     return new Promise((res)=>{chrome.runtime.sendMessage(exId,{meta:'getChanges',blId,version},res)})
 }
 function fetchTitle(blId) {
@@ -275,6 +275,9 @@ async function activateBlocklive() {
     addChat()
 
     playChanges = async (changes)=>{
+        console.log('syncing new changes:',changes)
+        if(changes.forceReload) {forceReload()}
+
         pauseEventHandling = true
         for (let i = 0; i < changes.length; i++) {
             await blockliveListener(changes[i])
@@ -300,6 +303,11 @@ async function activateBlocklive() {
         } else {
             await playChanges(changes)
         }    
+    }
+
+    function forceReload() {
+        window.onbeforeunload=null;
+        location.reload()
     }
 
 ///.......... CONNECT TO CHROME PORT ..........//
@@ -2747,7 +2755,7 @@ let blActivateClick = async ()=>{
         await refreshShareModal()
 
         // add blocklive ref in instructions credits
-        addToCredits('Collab Using the Blocklive Realtime Collab Extension')
+        addToCredits('Collab Using the BIocklive Realtime Collab Extension')
 
         // stop spinny
         document.querySelector('loader.blockliveloader').style.display = 'none'

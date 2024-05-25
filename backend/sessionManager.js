@@ -10,6 +10,11 @@ const OFFLOAD_TIMEOUT_MILLIS = 45 * 1000 // you get two minutes before the proje
 
 class BlockliveProject {
 
+    // a note on project versioning:
+    // a change's version refers to the version that the project is on after a change is played
+    // a jsonVersion refers to the version of the last change included in a json
+    // the next change to be played must be a client's current blVersion + 1
+
     static fromJSON(json) {
         let ret = new BlockliveProject(json.title)
         Object.entries(json).forEach(entry => {
@@ -281,6 +286,11 @@ class ProjectWrapper {
         this.session.sendChangeFrom(null, msg, true)
     }
 
+    trimChanges(n) { // defaults to trimming to json version
+        if(!n) {n = this.project.version - this.jsonVersion}
+        this.project.trimChanges(n)
+    }
+
     // scratchSaved(id,version) {
     //     // dont replace scratch id if current version is already ahead
     //     if(version <= this.scratchVersion) {console.log('version too low. not recording. most recent version & id:',this.scratchVersion, this.scratchId);return}
@@ -298,7 +308,7 @@ class ProjectWrapper {
         if (version <= this.jsonVersion) { console.log('version too low. not recording. most recent version & id:', this.jsonVersion); return }
         this.projectJson = json
         this.jsonVersion = version
-        this.project.trimChanges(10)
+        this.trimChanges()
         // console.log('linkedWith length', this.linkedWith.length)
         // this.linkedWith.find(proj=>proj.scratchId == id).version = version
     }
@@ -319,7 +329,6 @@ class ProjectWrapper {
         this.session.addClient(client)
         if (!this.project.lastUser) { this.project.lastUser = username }
     }
-
 }
 
 export default class SessionManager {
@@ -377,7 +386,7 @@ export default class SessionManager {
         Object.entries(this.blocklive).forEach(entry => {
             let project = entry[1]
             let id = entry[0]
-            project.project.trimChanges(20)
+            project.trimChanges()
         })
         saveMapToFolder(this.blocklive, blocklivePath)
         this.blocklive = {}
@@ -397,7 +406,7 @@ export default class SessionManager {
         let project = this.blocklive[id];
         if (!project) { return }
         if (Object.keys(project.session.connectedClients).length == 0) {
-            project.project.trimChanges(20)
+            project.trimChanges()
             this.offloadProject(id)
         } else {
             this.renewOffloadTimeout(id)
@@ -406,6 +415,7 @@ export default class SessionManager {
     offloadProject(id) {
         try {
             console.log('offloading project ' + id)
+            this.blocklive[id]?.trimChanges()
             let toSaveBlocklive = {}
             toSaveBlocklive[id] = this.blocklive[id]
             if (toSaveBlocklive[id]) { // only save it if there is actual data to save
@@ -516,7 +526,7 @@ export default class SessionManager {
             }
         }
         if (Object.keys(project.session.connectedClients).length == 0) {
-            project.project.trimChanges(20)
+            project.trimChanges()
             this.offloadProject(id)
         }
         console.log(username + ' LEFT | blId: ' + id + ', scratchId: ' + project.scratchId)
