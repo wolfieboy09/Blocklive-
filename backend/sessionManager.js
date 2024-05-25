@@ -4,6 +4,7 @@ import path, { sep } from 'path';
 import sanitize from 'sanitize-filename';
 import { blocklivePath, lastIdPath, saveMapToFolder, saveMapToFolderAsync, scratchprojectsPath } from './filesave.js';
 import { Blob } from 'node:buffer'
+import { countRecent, countRecentShared } from './recentUsers.js';
 
 const OFFLOAD_TIMEOUT_MILLIS = 45 * 1000 // you get two minutes before the project offloads
 
@@ -679,6 +680,12 @@ export default class SessionManager {
         let set1 = new Set();
         let set2 = new Set();
         let stats = {
+            active24HrCollabing:0,
+            active1weekCollabing:0,
+            active30dCollabing:0,
+            active24Hr:0,
+            active1week:0,
+            active30d:0,
             totalActiveProjects: 0,
             totalProjectsMoreThan1Editor: 0,
             usersActiveCount: 0,
@@ -715,6 +722,13 @@ export default class SessionManager {
         let oldUsersActiveMoreThan1Editor = Array.from(set2);
         stats.usersActiveCount = stats.usersActive.length
         stats.usersActiveMoreThan1EditorCount = oldUsersActiveMoreThan1Editor.length
+
+        stats.active24HrCollabing = countRecentShared(1);
+        stats.active1weekCollabing = countRecentShared(7);
+        stats.active30dCollabing = countRecentShared(30);
+        stats.active24Hr = countRecent(1);
+        stats.active1week = countRecent(7);
+        stats.active30d = countRecent(30);
         return stats;
     }
 

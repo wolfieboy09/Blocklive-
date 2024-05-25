@@ -42,6 +42,7 @@ import { blocklivePath, lastIdPath, loadMapFromFolder, saveMapToFolder, saveMapT
 import { Filter } from './profanity-filter.js';
 import { postText } from './discord-webhook.js';
 import { installCleaningJob } from './removeOldProjects.js';
+import { addRecent, saveRecent } from './recentUsers.js';
 
 
 const restartMessage = 'An admin is restarting the blocklive server in 3 seconds... you may lose connection for an instant.'
@@ -57,6 +58,8 @@ sessionsObj.blocklive = {};
 sessionsObj.lastId = fs.existsSync('storage/sessions/lastId') ? parseInt(fs.readFileSync('storage/sessions/lastId').toString()) : 0
 let banned = fs.existsSync('storage/banned') ? fs.readFileSync('storage/banned').toString().split('\n') : []
 console.log(sessionsObj)
+
+
 
 // sessionsObj = JSON.parse(fs.readFileSync('storage/sessions.json')) // load sessions from file sessions.json
 
@@ -104,6 +107,7 @@ async function saveAsync() {
      await saveMapToFolderAsync(sessionManager.blocklive,blocklivePath);
      // await saveMapToFolderAsync(sessionManager.scratchprojects,scratchprojectsPath);
      await saveMapToFolderAsync(userManager.users,usersPath);
+     await saveRecent();
 }
 let isFinalSaving = false;
 async function finalSave() {
@@ -116,6 +120,7 @@ async function finalSave() {
      fs.writeFileSync(lastIdPath,(sessionManager.lastId).toString());
      sessionManager.finalSaveAllProjects(); // now they automatically offload
      saveMapToFolder(userManager.users,usersPath);
+     await saveRecent();
      process.exit()
 }
 saveMapToFolder(sessionManager.blocklive,blocklivePath)
@@ -204,7 +209,17 @@ io.on('connection', (client) => {
           if(data.type in messageHandlers) {
                try{messageHandlers[data.type](data,client,callback)}
                catch(e){console.error('error during messageHandler',e)}
-          } else {console.log('discarded unknown mesage type: ' + data.type)}
+               analytic: try{
+                    let id = data.blId ?? data.id ?? null;
+                    if (!id) { break analytic }
+                    let project = sessionManager.getProject(id);
+                    if (!project) { break analytic }
+                    let sharedWith = [...project?.sharedWith, project?.owner];
+                    sharedWith?.forEach?.(username => {
+                         addRecent(username, sharedWith.length)
+                    })
+               } catch (e) { console.error('error with analytic message tally'); console.error(e) }
+          } else { console.log('discarded unknown mesage type: ' + data.type) }
      })
 
      client.on('disconnect',(reason)=>{
