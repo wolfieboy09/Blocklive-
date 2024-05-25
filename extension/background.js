@@ -9,7 +9,7 @@ chrome.runtime.onInstalled.addListener((details)=>{
   if(details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
     chrome.tabs.create({url:'https://sites.google.com/catlin.edu/blocklive-quickstart-guide/home#h.lebe3qxxu5ou'})
   } else if (details.reason === chrome.runtime.OnInstalledReason.UPDATE) {
-    // chrome.tabs.create({url:'https://sites.google.com/view/blocklive/new-blocklive-version'})
+    chrome.tabs.create({url:'https://sites.google.com/view/blocklive/new-blocklive-version'})
     // chrome.tabs.create({url:'https://sites.google.com/catlin.edu/blocklive-quickstart-guide/new-blocklive-version'})
   }
 })
