@@ -42,7 +42,7 @@ import { blocklivePath, lastIdPath, loadMapFromFolder, saveMapToFolder, saveMapT
 import { Filter } from './profanity-filter.js';
 import { postText } from './discord-webhook.js';
 import { installCleaningJob } from './removeOldProjects.js';
-import { addRecent, saveRecent } from './recentUsers.js';
+import { addRecent, countRecentShared, saveRecent } from './recentUsers.js';
 
 
 const restartMessage = 'An admin is restarting the blocklive server in 3 seconds... you may lose connection for an instant.'
@@ -342,6 +342,9 @@ app.get('/stats',(req,res)=>{
           cachedStatsTime = Date.now()
      } 
      res.send(cachedStats)
+})
+app.get('/active/:days',(req,res)=>{
+     res.send(countRecentShared(parseFloat(req.params.days)))
 })
 app.put('/linkScratch/:scratchId/:blId/:owner',(req,res)=>{
      console.log('linking:',req.params)
