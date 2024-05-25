@@ -272,7 +272,7 @@ let getAndPlayNewChanges
 
 async function activateBlocklive() {
 
-    addChat()
+    addChat() 
 
     playChanges = async (changes)=>{
         console.log('syncing new changes:',changes)
