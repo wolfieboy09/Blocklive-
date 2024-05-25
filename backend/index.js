@@ -343,7 +343,7 @@ app.get('/stats',(req,res)=>{
      } 
      res.send(cachedStats)
 })
-app.get('/active/:days',(req,res)=>{
+app.get('/dau/:days',(req,res)=>{
      res.send(String(countRecentShared(parseFloat(req.params.days))))
 })
 app.put('/linkScratch/:scratchId/:blId/:owner',(req,res)=>{
