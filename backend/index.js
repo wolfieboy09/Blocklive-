@@ -344,7 +344,7 @@ app.get('/stats',(req,res)=>{
      res.send(cachedStats)
 })
 app.get('/active/:days',(req,res)=>{
-     res.send(countRecentShared(new String(parseFloat(req.params.days))))
+     res.send(String(countRecentShared(parseFloat(req.params.days))))
 })
 app.put('/linkScratch/:scratchId/:blId/:owner',(req,res)=>{
      console.log('linking:',req.params)
