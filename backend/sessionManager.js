@@ -362,8 +362,9 @@ export default class SessionManager {
         SessionManager.inst = this
     }
 
+    // Deprecated
     offloadStaleProjects() {
-        Object.entries(this.blocklive).forEach(entry => {
+            Object.entries(this.blocklive).forEach(entry => {
             let project = entry[1]
             let id = entry[0]
             if (Object.keys(project.session.connectedClients).length == 0) {
@@ -381,6 +382,7 @@ export default class SessionManager {
         saveMapToFolder(this.blocklive, blocklivePath)
         this.blocklive = {}
     }
+    // Deprecated
     async offloadStaleProjectsAsync() {
         for (let entry of Object.entries(this.blocklive)) {
             let project = entry[1]

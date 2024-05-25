@@ -95,9 +95,7 @@ async function saveAsync() {
 
      console.log('saving now...')
      await fsp.writeFile(lastIdPath,(sessionManager.lastId).toString());
-     // await sessionManager.offloadStaleProjectsAsync(); // now they automatically offload
      await saveMapToFolderAsync(sessionManager.blocklive,blocklivePath);
-     // await saveMapToFolderAsync(sessionManager.scratchprojects,scratchprojectsPath);
      await saveMapToFolderAsync(userManager.users,usersPath);
      await saveRecent();
 }
