@@ -737,9 +737,9 @@ export default class SessionManager {
         stats.active24HrCollabing = countRecentShared(1);
         stats.active1weekCollabing = countRecentShared(7);
         stats.active30dCollabing = countRecentShared(30);
-        stats.active24HrCollabing = countRecentRealtime(1);
-        stats.active1weekCollabing = countRecentRealtime(7);
-        stats.active30dCollabing = countRecentRealtime(30);
+        stats.active24HrRealtime = countRecentRealtime(1);
+        stats.active1weekRealtime = countRecentRealtime(7);
+        stats.active30dRealtime = countRecentRealtime(30);
         stats.active24Hr = countRecent(1);
         stats.active1week = countRecent(7);
         stats.active30d = countRecent(30);
