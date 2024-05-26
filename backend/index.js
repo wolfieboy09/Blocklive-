@@ -9,6 +9,7 @@ import cors from 'cors'
 app.use(cors({origin:'*'}))
 app.use(express.json({ limit: '5MB' }))
 import fsp from 'fs/promises'
+import basicAuth from 'express-basic-auth'
 ////////////
 // import http from 'http'
 // const server = http.createServer(app);
@@ -43,6 +44,7 @@ import { Filter } from './profanity-filter.js';
 import { postText } from './discord-webhook.js';
 import { installCleaningJob } from './removeOldProjects.js';
 import { addRecent, countRecentShared, saveRecent } from './recentUsers.js';
+import { adminUser } from './secrets/secrets.js';
 
 
 const restartMessage = 'An admin is restarting the blocklive server in 3 seconds... you may lose connection for an instant.'
@@ -58,7 +60,6 @@ sessionsObj.blocklive = {};
 sessionsObj.lastId = fs.existsSync('storage/sessions/lastId') ? parseInt(fs.readFileSync('storage/sessions/lastId').toString()) : 0
 let banned = fs.existsSync('storage/banned') ? fs.readFileSync('storage/banned').toString().split('\n') : []
 console.log(sessionsObj)
-
 
 
 // sessionsObj = JSON.parse(fs.readFileSync('storage/sessions.json')) // load sessions from file sessions.json
@@ -354,6 +355,10 @@ app.get('/chat/:id/',(req,res)=>{
 let cachedStats = null;
 let cachedStatsTime = 0;
 let cachedStatsLifetimeMillis = 1000;
+app.use('/stats',basicAuth({
+     users: adminUser,
+     challenge: true,
+ }))
 app.get('/stats',(req,res)=>{
      if(Date.now() - cachedStatsTime > cachedStatsLifetimeMillis) {
           cachedStats = sessionManager.getStats()
@@ -362,6 +367,7 @@ app.get('/stats',(req,res)=>{
      } 
      res.send(cachedStats)
 })
+
 app.get('/dau/:days',(req,res)=>{
      res.send(String(countRecentShared(parseFloat(req.params.days))))
 })
