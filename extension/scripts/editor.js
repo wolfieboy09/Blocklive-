@@ -2279,7 +2279,7 @@ blModalExample = document.querySelector('#blModalExample')
             if(currentSearching != earch.value.toLowerCase()) { return}
             if(user) {
            
-            result.innerHTML = user.username
+            result.innerText = user.username
             result.parentNode.username = user.username
 
             resultt.style.visibility = 'visible'
@@ -2567,7 +2567,7 @@ async function addCollaboratorGUI (user,omitX){
     let newCollab = blModalExample.cloneNode(-1)
     // console.log(newCollab)
     newCollab.style.display = 'flex'
-    Array.from(newCollab.children).find(elem=>elem.localName =='name').innerHTML = user.username;
+    Array.from(newCollab.children).find(elem=>elem.localName =='name').innerText = user.username;
     let x = Array.from(newCollab.children).find(elem=>elem.localName =='x')
     if(omitX === true) {
         x.remove()
@@ -2997,7 +2997,7 @@ async function displayActive(users) {
         user.className = 'blActiveUser'
 
         let tooltip = document.createElement('div');
-        tooltip.innerHTML = users[i].username
+        tooltip.innerText = users[i].username
         tooltip.style.backgroundColor = COLORS_BRIGHT[yo]
         tooltip.className = 'blActiveName'
         container.appendChild(user)
@@ -3412,7 +3412,7 @@ function incChatUnread() {
 function setChatUnread(num) {
     chatUnreadCount = num;
     let chatdot=document.querySelector('.chatdot');
-    chatdot.innerHTML = num;
+    chatdot.innerText = num;
     chatdot.style.visibility = num==0 ? 'hidden' : 'visible'
 }
 
@@ -3480,13 +3480,28 @@ let pingUrl = "https://assets.scratch.mit.edu/internalapi/asset/cf51a0c4088942d9
 // chrome.runtime.sendMessage(exId,{meta:'getPingUrl'},url=>{
 //     pingUrl = url;
 // });
+// credit https://stackoverflow.com/questions/2794137/sanitizing-user-input-before-adding-it-to-the-dom-in-javascript
+function sanitize(string) {
+    string = String(string)
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        "/": '&#x2F;',
+    };
+    const reg = /[&<>"'/]/ig;
+    return string.replace(reg, (match)=>(map[match]));
+  }
+
 async function addMessage(msg, notif) {
     let msgsElem = document.querySelector('bl-chat-msgs')
     if(msg.sender != lastSender) {
         let unameElem = document.createElement('bl-msg-sender')
         unameElem.innerHTML = `
         <bl-msg-sender-img></bl-msg-sender-img>
-        <bl-msg-sender-name>${msg.sender}</bl-msg-sender-name>`
+        <bl-msg-sender-name>${sanitize(msg.sender)}</bl-msg-sender-name>`
         lastSender = msg.sender
         if(msg.sender == uname) {unameElem.classList.add('mymsg')}
         msgsElem.appendChild(unameElem)

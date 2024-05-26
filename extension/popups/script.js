@@ -21,10 +21,26 @@ chrome.runtime.sendMessage({meta:"getUsernamePlus"},function(info){
 
 setTimeout(()=>{chrome.runtime.sendMessage({meta:"getUsernamePlus"},setSignedin)},1000)
 
-    document.querySelector('#listtitle').innerHTML = username + "'s Friends&nbsp;List"
+    document.querySelector('#listtitle').innerHTML = sanitize(username) + "'s Friends&nbsp;List"
 
 
     let alreadyAdded = {}
+
+// credit https://stackoverflow.com/questions/2794137/sanitizing-user-input-before-adding-it-to-the-dom-in-javascript
+    function sanitize(string) {
+        string = String(string)
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#x27;',
+            "/": '&#x2F;',
+        };
+        const reg = /[&<>"'/]/ig;
+        return string.replace(reg, (match)=>(map[match]));
+      }
+
 
     function addFriendGUI(name) {
         console.log(name)
@@ -33,7 +49,7 @@ setTimeout(()=>{chrome.runtime.sendMessage({meta:"getUsernamePlus"},setSignedin)
 
         let item = document.createElement('li')
         item.username = name
-        item.innerHTML = `<span class="friend-name" >@${name}</span>  <span class="x" href="page2.html">x</span>`;
+        item.innerHTML = `<span class="friend-name" >@${sanitize(name)}</span>  <span class="x" href="page2.html">x</span>`;
         item.onclick=(e)=>{
             if(e.target?.classList?.contains('x')) {removeFriend(name)}
             else {chrome.tabs.create({url: `https://scratch.mit.edu/users/${name}`});}

@@ -60,7 +60,27 @@ function sendLeave(scratchId,blId) {
   }
 }
 
+function sanitize(string) {
+  string = String(string)
+  // if(!(_.isString(string))) {return ''}
+  const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;',
+      "/": '&#x2F;',
+  };
+  const reg = /[&<>"'/]/ig;
+  return string.replace(reg, (match)=>(map[match]));
+}
+
 function getbox(blId,title,scratchId,lastModified,lastModBy,projectExists) {
+  scratchId=sanitize(scratchId);
+  title=sanitize(title);
+  blId=sanitize(blId);
+  lastModBy=sanitize(lastModBy);
+
     return`
     <div class="media-item-content not-shared">
       <div class="media-thumb">
@@ -129,14 +149,14 @@ function convertToBlocklive(listItem,projectObj) {
     listItem.children[0].children[1].children[0].children[0].style.color = '#ff4ad5'
     listItem.children[0].children[2].children[0].children[0].style.color = '#ff4ad5'
     
-    atts.buttonText = listItem.children[0].children[2].children[0].children[0].innerHTML
-    listItem.children[0].children[2].children[0].children[0].innerHTML = 'Unlink'
+    atts.buttonText = listItem.children[0].children[2].children[0].children[0].innerText
+    listItem.children[0].children[2].children[0].children[0].innerText = 'Unlink'
     listItem.children[0].children[2].children[0].children[0].onclick = ()=>{cleanseOfBlockliveness(projectObj.scratchId,listItem); sendLeave(projectObj.scratchId,projectObj.blId)}
-    atts.title = listItem.children[0].children[1].children[0].children[0].innerHTML
-    listItem.children[0].children[1].children[0].children[0].innerHTML = projectObj.title
+    atts.title = listItem.children[0].children[1].children[0].children[0].innerText
+    listItem.children[0].children[1].children[0].children[0].innerText = projectObj.title
 
-    atts.modified = listItem.children[0].children[1].children[1].innerHTML
-    listItem.children[0].children[1].children[1].innerHTML = `\n          Last modified: \n          \n            ${timeSince(new Date(projectObj.lastTime))} ago by ${projectObj.lastUser}\n          \n        `
+    atts.modified = listItem.children[0].children[1].children[1].innerText
+    listItem.children[0].children[1].children[1].innerText = `\n          Last modified: \n          \n            ${timeSince(new Date(projectObj.lastTime))} ago by ${projectObj.lastUser}\n          \n        `
 
     oldAttrs[projectObj.scratchId] = atts
 
@@ -146,10 +166,10 @@ function cleanseOfBlockliveness(scratchId, listItem) {
   if(!atts) {return}
   listItem.children[0].children[1].children[0].children[0].style.color = atts.color
   listItem.children[0].children[2].children[0].children[0].style.color = atts.color
-  listItem.children[0].children[2].children[0].children[0].innerHTML = atts.buttonText
+  listItem.children[0].children[2].children[0].children[0].innerText = atts.buttonText
   // listItem.children[0].children[2].children[0].children[0].onclick = ()=>{alert('yi')}
-  listItem.children[0].children[1].children[0].children[0].innerHTML = atts.title
-  listItem.children[0].children[1].children[1].innerHTML = atts.modified
+  listItem.children[0].children[1].children[0].children[0].innerText = atts.title
+  listItem.children[0].children[1].children[1].innerText = atts.modified
 }
 
 function addProject(projectObj, projectExists) {
