@@ -372,7 +372,7 @@ chrome.runtime.onMessageExternal.addListener(
         method:'POST',
         body:request.json,
         headers:{'Content-Type': 'application/json',authorization:currentBlToken}
-      })).json())
+      }).then(res=>res.json()).catch(e=>({err:e.toString()}))))
     } else if(request.meta == 'shareWith') {
       fetch(`${apiUrl}/share/${request.id}/${request.username}/${uname}?pk=${request.pk}`,{
         method:'PUT',

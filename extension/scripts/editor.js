@@ -2715,6 +2715,18 @@ function addToCredits(text) {
     }
 }
 
+function showBlStartError(err) {
+    let rand=`a${Math.random().toString().substring(2)}`
+      // stop spinny
+    document.querySelector('loader.blockliveloader').style.display = 'none'
+
+    document.querySelector('.blErr')?.remove()
+    document.querySelector("blocklivecontainer > blocklive-init").insertAdjacentHTML('afterend',`<div class="${rand} blErr" style="background:#ffcdf2; outline:3px solid red; padding:4px; position:absolute; top:50px; border-radius:12px; color:red"></div>`)
+    document.querySelector('.blErr').innerText=`There was an error:\n ${err}`
+    setTimeout(()=>{document.querySelector(`.blErr.${rand}`)?.remove()},5000)
+
+}
+
 let blActivateClick = async ()=>{
 
     if(blockliveDeleted) {reloadAfterRestart=true} //todo write code so that it can do this without restarting
@@ -2741,6 +2753,13 @@ let blActivateClick = async ()=>{
     let json = vm.toJSON()
 
     chrome.runtime.sendMessage(exId,{json,meta:'create',scratchId,title:store.getState().preview.projectInfo.title},async (response)=>{
+        if(response.noauth || response.err) {
+            showBlStartError(response.noauth ? 'Blocklive hasnt verified you yet.' : response.err)
+            blockliveButton.onclick = blActivateClick
+            return;
+        }
+        
+       
         blId = response.id 
 
    
