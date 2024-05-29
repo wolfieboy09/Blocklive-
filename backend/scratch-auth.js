@@ -3,6 +3,21 @@ import { bypassAuth } from "./index.js";
 import { ids } from "./secrets/secrets.js";
 import fs from 'fs'
 export const freePassesPath = 'storage/freePasses.json'
+export const failedAuthLog={}
+
+function logAuth(username, success, word) {
+    if(!username) {return;}
+    if(success) {
+        console.error(`✅ Successfully ${word}ed user ${username}`)
+        if(username in failedAuthLog) {
+            delete failedAuthLog[username]
+        }
+    } else {
+        failedAuthLog[username] = true;
+        console.error(`🆘 Failed to ${word} user ${username}`)
+
+    }
+}
 
 let pendingMap = {} // publicAuthCode : clientSecret 
 
@@ -12,8 +27,8 @@ function sleep(millis) {
 
 
 let idIndex = 0;
-export function getAuthProjStats() {
-    return {idIndex,info:getAuthProjectInfo()}
+export function getAuthStats() {
+    return {idIndex,info:getAuthProjectInfo(),failed:failedAuthLog}
 }
 
 function generateAuthCode() {
@@ -55,11 +70,13 @@ export function setPaths(app,userManagerr,sessionManagerr) {
             }
             if(comment?.code =='nocon') {
                 grantFreePass(req.headers.uname)
+                logAuth(req.headers.uname,true,'verify')
                 res.send({freepass:true})
                 return;
             }
             if(!comment) {
                 res.send({err:'no comment'})
+                logAuth(req.headers.uname,false,'verify')
                 return;
             }
             console.log('comment',comment)
@@ -69,11 +86,13 @@ export function setPaths(app,userManagerr,sessionManagerr) {
             let token = userManagerr.getUser(username)?.token
             if(!token) {
                 res.send({err:'user not found',username});
+                logAuth(username,false,'verify')
                 return;
             }
 
             deleteFreePass(username)
             res.send({token,username})
+            logAuth(username,true,'verify')
             return;
         } catch(err) {
             next(err);
@@ -160,8 +179,12 @@ export function deleteFreePass(username) {
 export function authenticate(username,token) {
     if(bypassAuth) {return true}
     let success = hasFreePass(username) || userManager.getUser(username).token == token
-    if(!success) {
-        console.error(`🟪 User Authentication failed for user: ${username}, bltoken: ${token}`)
+    if(success) {
+        logAuth(username,true,'authenticate')
+    } else {
+        logAuth(username,false,'authenticate')
+        // console.error(`🟪 User Authentication failed for user: ${username}, bltoken: ${token}`)
+
     }
     return success
 }
