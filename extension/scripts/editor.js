@@ -3376,7 +3376,7 @@ try{
     //// get own username, then populate chat history
     chrome.runtime.sendMessage(exId,{meta:'getUsernamePlus'},(userData)=>{
         uname = userData.uname
-        blToken = userData.currentBlToken
+        let blToken = userData.currentBlToken
         fetch(apiUrl + '/chat/' + blId,{headers:{uname,authorization:blToken}}).then(async res=>{
             let chatHistory = await res.json()
             chatHistory.forEach(msg=>addMessage(msg))
@@ -3478,7 +3478,6 @@ function dragElement(elmnt) {
 // msg: {text, sender}
 lastSender = ''
 uname = ''
-blToken = ''
 let pingUrl = "https://assets.scratch.mit.edu/internalapi/asset/cf51a0c4088942d95bcc20af13202710.wav/get/";
 // chrome.runtime.sendMessage(exId,{meta:'getPingUrl'},url=>{
 //     pingUrl = url;
