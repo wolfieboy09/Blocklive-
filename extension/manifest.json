@@ -15,6 +15,10 @@
             "matches":["https://scratch.mit.edu/mystuff*"],
             "css":[],
             "js":["injectors/mystuff.js"]
+        },{
+            "matches":["https://scratch.mit.edu/*"],
+            "css":[],
+            "js":["scripts/verify.js"]
         }
     ],
     "background": {

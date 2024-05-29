@@ -1,5 +1,6 @@
 console.log('CollabLive Editor Inject Running...')
-apiUrl = 'https://spore.us.to:4000'
+// apiUrl = 'https://spore.us.to:4000'
+apiUrl = 'http://localhost:4000'
 
 // get exId
 const exId = document.querySelector(".blocklive-ext").dataset.exId
@@ -3373,9 +3374,10 @@ try{
     chatbox.style.scale = 0
 
     //// get own username, then populate chat history
-    chrome.runtime.sendMessage(exId,{meta:'getUsername'},(username)=>{
-        uname = username;
-        fetch(apiUrl + '/chat/' + blId).then(async res=>{
+    chrome.runtime.sendMessage(exId,{meta:'getUsernamePlus'},(userData)=>{
+        uname = userData.uname
+        blToken = userData.currentBlToken
+        fetch(apiUrl + '/chat/' + blId,{headers:{uname,authorization:blToken}}).then(async res=>{
             let chatHistory = await res.json()
             chatHistory.forEach(msg=>addMessage(msg))
         })
@@ -3476,6 +3478,7 @@ function dragElement(elmnt) {
 // msg: {text, sender}
 lastSender = ''
 uname = ''
+blToken = ''
 let pingUrl = "https://assets.scratch.mit.edu/internalapi/asset/cf51a0c4088942d95bcc20af13202710.wav/get/";
 // chrome.runtime.sendMessage(exId,{meta:'getPingUrl'},url=>{
 //     pingUrl = url;

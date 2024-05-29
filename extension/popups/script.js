@@ -1,3 +1,5 @@
+
+
 document.querySelector("button.viewall").addEventListener("click", function() {
     chrome.tabs.create({
         url: "/projects/index.html"
@@ -6,12 +8,17 @@ document.querySelector("button.viewall").addEventListener("click", function() {
 
 chrome.runtime.sendMessage({meta:"getUsernamePlus"},function(info){
     let username = info.uname
+    let token = info.currentBlToken
+    let apiUrl = info.apiUrl
 
 
     function setSignedin(info) {
+
     if(info.signedin) {
         document.querySelector('#loggedout').style.display = 'none'
         document.querySelector('#normal').style.display = 'unset'
+        token = info.currentBlToken;
+        username = info.uname
     } else {
         document.querySelector('#loggedout').style.display = 'unset'
         document.querySelector('#normal').style.display = 'none'
@@ -65,7 +72,7 @@ setTimeout(()=>{chrome.runtime.sendMessage({meta:"getUsernamePlus"},setSignedin)
         if(name.includes(' ')) {return}
         document.querySelector('#searchh').value = ''
         addFriendGUI(name)
-        fetch(`https://spore.us.to:4000/friends/${username}/${name}`,{method:"POST"});
+        fetch(`${apiUrl}/friends/${username}/${name}`,{method:"POST",headers:{authorization:token}});
     }
 
     function removeFriend(name) {
@@ -73,7 +80,7 @@ setTimeout(()=>{chrome.runtime.sendMessage({meta:"getUsernamePlus"},setSignedin)
         for(let child of document.querySelector('#friends').children) {
             if(child.username == name) {child.remove(); break;}
         }
-        fetch(`https://spore.us.to:4000/friends/${username}/${name}`,{method:"DELETE"});
+        fetch(`${apiUrl}/friends/${username}/${name}`,{method:"DELETE",headers:{authorization:token}});
     }
 
     document.querySelector('#searchh').addEventListener("keyup", function(event) {
@@ -83,13 +90,17 @@ setTimeout(()=>{chrome.runtime.sendMessage({meta:"getUsernamePlus"},setSignedin)
     });
     document.querySelector('#submit').onclick = ()=>{addFriend(document.querySelector('#searchh').value)}
 
-
-    // populate with current friends
-    fetch(`https://spore.us.to:4000/friends/${username}`)
-        .then((res)=>{document.querySelector('#friends').innerHTML = '';return res})
-        .then(res=>res.json().then(list=>list.forEach(addFriendGUI)))
-        .catch(()=>{document.querySelector('#friends').innerHTML = '<span style="color:red;">Error: Request Failed :(<span>'})
+    if(!info.currentBlToken) {
+        document.querySelector('#friends').innerHTML = `<div style="color:red; text-align:center; font-size: medium; padding:10px; justify-self:center;"><span style="background:white;">You're not verified with blocklive. <br> <br> To verify, ensure your account can comment and open scratch in a new tab for 10 seconds. <br><br> If you're still not verified, contact @ilhp10 or @rgantzos </span></div>`
+    } else {
+        // populate with current friends
+        fetch(`${apiUrl}/friends/${username}`,{headers:{authorization:token}})
+            .then((res)=>{document.querySelector('#friends').innerHTML = '';return res})
+            .then(res=>res.json().then(list=>list.forEach(addFriendGUI)))
+            .catch(()=>{document.querySelector('#friends').innerHTML = '<span style="color:red;">Error: Request Failed :(<span>'})
+    }
 });
+
 
 
 document.getElementById('discord').onclick = ()=>{

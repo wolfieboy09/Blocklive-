@@ -1,6 +1,6 @@
 // be mindful of:
 // numbers being passed as strings
-
+export const bypassAuth = true // until everyone gets the new client version
 
 ///////////
 import express from 'express'
@@ -10,21 +10,29 @@ app.use(cors({origin:'*'}))
 app.use(express.json({ limit: '5MB' }))
 import fsp from 'fs/promises'
 import basicAuth from 'express-basic-auth'
-////////////
-// import http from 'http'
-// const server = http.createServer(app);
-////////////
-// copied from https://stackoverflow.com/questions/11804202/how-do-i-setup-a-ssl-certificate-for-an-express-js-server
 import os from 'os'
 import path from 'path';
-let homedir = '/home/opc'
-let privateKey = fs.readFileSync( homedir + path.sep + 'letsencrypt/live/spore.us.to/privkey.pem' );
-let certificate = fs.readFileSync( homedir + path.sep + 'letsencrypt/live/spore.us.to/fullchain.pem' );
 import https from 'https'
-const server = https.createServer({
-     key: privateKey,
-     cert: certificate,
-},app);
+import http from 'http'
+
+let server;
+
+if(os.platform()=='darwin') {
+     server = http.createServer(app);
+} else {  
+     let homedir = '/home/opc'
+     let privateKey = fs.readFileSync( homedir + path.sep + 'letsencrypt/live/spore.us.to/privkey.pem' );
+     let certificate = fs.readFileSync( homedir + path.sep + 'letsencrypt/live/spore.us.to/fullchain.pem' );
+     server = https.createServer({
+          key: privateKey,
+          cert: certificate,
+     },app); 
+}
+////////////
+
+////////////
+// copied from https://stackoverflow.com/questions/11804202/how-do-i-setup-a-ssl-certificate-for-an-express-js-server
+
 /////////
 
 import {Server} from 'socket.io'
@@ -45,6 +53,7 @@ import { postText } from './discord-webhook.js';
 import { installCleaningJob } from './removeOldProjects.js';
 import { addRecent, countRecentShared, saveRecent } from './recentUsers.js';
 import { adminUser } from './secrets/secrets.js';
+import {setPaths, authenticate} from './scratch-auth.js';
 
 
 const restartMessage = 'An admin is restarting the blocklive server in 3 seconds... you may lose connection for an instant.'
@@ -70,6 +79,7 @@ var sessionManager = SessionManager.fromJSON(sessionsObj)
 // var userManager = UserManager.fromJSON({users:loadMapFromFolder('storage/users')}) // load from users folder
 // var userManager = UserManager.fromJSON({users:JSON.parse(fs.readFileSync('storage/users.json'))}) // load from file users.json
 var userManager = new UserManager()
+setPaths(app,userManager,sessionManager)
 
 // share projects from sessions db in users db
 // Object.values(sessionManager.blocklive).forEach(proj=>{
@@ -132,42 +142,54 @@ filter.loadDefault()
 
 let messageHandlers = {
      'joinSession':(data,client)=>{
+          if(!fullAuthenticate(data.username,data.token,data.id)) {client.send({noauth:true}); return;}
+
           sessionManager.join(client,data.id,data.username)
           if(data.pk) { userManager.getUser(data.username).pk = data.pk }
      },'joinSessions':(data,client)=>{
+          if(!fullAuthenticate(data.username,data.token,data.id)) {client.send({noauth:true}); return;}
+
           data.ids.forEach(id=>{sessionManager.join(client,id,data.username)})
           if(data.pk) { userManager.getUser(data.username).pk = data.pk }
      },
      'leaveSession':(data,client)=>{
           sessionManager.leave(client,data.id)
      },
-     'shareWith':(data,client)=>{
-          sessionManager.shareProject(data.id,data.user,data.pk)
-     },
+     // 'shareWith':(data,client)=>{
+     //      if(!fullAuthenticate(data.username,data.token,data.id)) {client.send({noauth:true}); return;}
+
+     //      sessionManager.shareProject(data.id,data.user,data.pk)
+     // },
      'projectChange':(data,client,callback)=>{
+          if(!fullAuthenticate(data.username,data.token,data.blId)) {client.send({noauth:true}); return;}
+
           sessionManager.projectChange(data.blId,data,client)
           callback(sessionManager.getVersion(data.blId))
      },
-     'getChanges':(data,client)=>{
-          let project = sessionManager.getProject(data.id)
-          if(!project) {return}
+     // 'getChanges':(data,client)=>{
+     //      if(!fullAuthenticate(data.username,data.token,data.id)) {client.send({noauth:true}); return;}
+
+     //      let project = sessionManager.getProject(data.id)
+     //      if(!project) {return}
          
-          let oldestChange = project.project.indexZeroVersion;
-          let clientVersion = data.version;
-          let jsonVersion = project.jsonVersion;
-          let forceReload = clientVersion<oldestChange-1 && jsonVersion>=oldestChange-1;
+     //      let oldestChange = project.project.getIndexZeroVersion();
+     //      let clientVersion = data.version;
+     //      let jsonVersion = project.jsonVersion;
+     //      let forceReload = clientVersion<oldestChange-1 && jsonVersion>=oldestChange-1;
 
 
-          let changes = project?.project.getChangesSinceVersion(data.version)
-          client.send({type:'projectChanges',changes,forceReload,projectId:data.id,currentVersion:project.project.version})
-     },
+     //      let changes = project?.project.getChangesSinceVersion(data.version)
+     //      client.send({type:'projectChanges',changes,forceReload,projectId:data.id,currentVersion:project.project.version})
+     // },
      'setTitle':(data,client)=>{
+          if(!fullAuthenticate(data.username,data.token,data.blId)) {client.send({noauth:true}); return;}
+
           let project = sessionManager.getProject(data.blId)
           if(!project) {return}
           project.project.title = data.msg.title
           project.session.sendChangeFrom(client,data.msg,true)
      },
-     'setCursor':(data,client)=>{
+     'setCursor':(data,client)=>{ // doesnt need to be authenticated because relies on pre-authenticated join action
           let project = sessionManager.getProject(data.blId)
           if(!project) {return}
           let cursor = project.session.getClientFromSocket(client)?.cursor
@@ -177,9 +199,12 @@ let messageHandlers = {
           })
      },
      'chat':(data,client)=>{
+
           let text = data.msg.msg.text
           let sender = data.msg.msg.sender
           let project = sessionManager.getProject(data.blId)
+
+          if(!fullAuthenticate(sender,data.token,data.blId)) {client.send({noauth:true}); return;}
 
           if(filter.isVulgar(text)) {
                let sentTo = project.session.getConnectedUsernames().filter(uname=>uname!=sender?.toLowerCase())
@@ -206,8 +231,8 @@ io.on('connection', (client) => {
      client.on("message",(data,callback)=>{
           // console.log('message recieved',data,'from: ' + client.id)
           if(data.type in messageHandlers) {
-               try{messageHandlers[data.type](data,client,callback)}
-               catch(e){console.error('error during messageHandler',e)}
+
+               // record analytic first to stop reloading after project leave
                analytic: try{
                     let id = data.blId ?? data.id ?? null;
                     if (!id) { break analytic }
@@ -218,6 +243,9 @@ io.on('connection', (client) => {
                          addRecent(username, connected.length>1, project.sharedWith.length)
                     })
                } catch (e) { console.error('error with analytic message tally'); console.error(e) }
+
+               try{messageHandlers[data.type](data,client,callback)}
+               catch(e){console.error('error during messageHandler',e)}
           } else { console.log('discarded unknown mesage type: ' + data.type) }
      })
 
@@ -227,6 +255,8 @@ io.on('connection', (client) => {
 });
 
 app.post('/newProject/:scratchId/:owner',(req,res)=>{
+     if(!authenticate(req.params.owner,req.headers.authorization)) {res.send({noauth:true}); return;}
+
      console.log('yeetee')
      if(sanitize(req.params.scratchId + '') == '') {res.send({err:'invalid scratch id'}); return}
      let project = sessionManager.getScratchToBLProject(req.params.scratchId)
@@ -253,9 +283,9 @@ app.get('/blId/:scratchId/:uname',(req,res)=>{
           res.send(null); 
           return;
      }
-     let hasAccess = ([...project.sharedWith,project.owner]).map(u=>u?.toLowerCase()).includes(req.params.uname?.toLowerCase());
-     if(req.params.uname=='ilhp10' || req.params.uname=='rgantzos') {hasAccess = true;}
-     res.send(hasAccess ? blId : null);
+     let hasAccess = fullAuthenticate(req.params.uname,req.headers.authorization,blId)
+
+     res.send(hasAccess  ? blId : null);
 })
 app.get('/scratchIdInfo/:scratchId',(req,res)=>{
      if (sessionManager.doesScratchProjectEntryExist(req.params.scratchId)) {
@@ -266,6 +296,8 @@ app.get('/scratchIdInfo/:scratchId',(req,res)=>{
 })
 // todo: sync info and credits with this endpoint as well?
 app.get('/projectTitle/:id',(req,res)=>{
+     if(!fullAuthenticate(req.headers.uname,req.headers.authorization,req.params.id)) {res.send({noauth:true}); return;}
+
      let project = sessionManager.getProject(req.params.id)
      if(!project) {
           res.send({err:'could not find project with blocklive id: ' + req.params.id})
@@ -284,6 +316,8 @@ app.get('/projectTitle/:id',(req,res)=>{
 //      res.send('awesome :)')
 // })
 app.post('/projectSavedJSON/:blId/:version',(req,res)=>{
+     if(!fullAuthenticate(req.headers.uname,req.headers.authorization,req.params.blId)) {res.send({noauth:true}); return;}
+
      let json = req.body;
      console.log('saving project, blId: ',req.params.blId, ' version: ',req.params.version, 'json is null?: ' + !json)
      let project = sessionManager.getProject(req.params.blId)
@@ -295,6 +329,8 @@ app.post('/projectSavedJSON/:blId/:version',(req,res)=>{
      res.send('awesome :)')
 })
 app.get('/projectJSON/:blId',(req,res)=>{
+     if(!fullAuthenticate(req.query.username,req.headers.authorization,req.params.blId)) {res.send({noauth:true}); return;}
+
      let blId = req.params.blId;
      let project = sessionManager.getProject(blId);
      if(!project) {res.sendStatus(404); return;}
@@ -318,11 +354,13 @@ app.get('/projectJSON/:blId',(req,res)=>{
 //      }
 // })
 app.get('/changesSince/:id/:version',(req,res)=>{
+     if(!fullAuthenticate(req.headers.uname,req.headers.authorization,req.params.id)) {res.send({noauth:true}); return;}
+
      let project = sessionManager.getProject(req.params.id)
      if(!project) {res.send([])}
      else {
 
-          let oldestChange = project.project.indexZeroVersion;
+          let oldestChange = project.project.getIndexZeroVersion();
           let clientVersion = req.params.version;
           let jsonVersion = project.jsonVersion;
           let forceReload = clientVersion<oldestChange-1 && jsonVersion>=oldestChange-1;
@@ -346,6 +384,9 @@ function buildMagicList(list) {
 }
 
 app.get('/chat/:id/',(req,res)=>{
+     if(!fullAuthenticate(req.headers.uname,req.headers.authorization,req.params.id)) {res.send({noauth:true}); return;}
+
+
      let project = sessionManager.getProject(req.params.id)
      if(!project) {res.send([])}
      else {
@@ -372,6 +413,8 @@ app.get('/dau/:days',(req,res)=>{
      res.send(String(countRecentShared(parseFloat(req.params.days))))
 })
 app.put('/linkScratch/:scratchId/:blId/:owner',(req,res)=>{
+     if(!fullAuthenticate(req.params.owner,req.headers.authorization,req.params.blId)) {res.send({noauth:true}); return;}
+
      console.log('linking:',req.params)
      sessionManager.linkProject(req.params.blId,req.params.scratchId,req.params.owner,0)
      res.send('cool :)')
@@ -389,7 +432,11 @@ app.put('/linkScratch/:scratchId/:blId/:owner',(req,res)=>{
 //      }
 // })
 app.get('/userRedirect/:scratchId/:username',(req,res)=>{
+
      let project = sessionManager.getScratchToBLProject(req.params.scratchId)
+
+     if(!fullAuthenticate(req.params.username,req.headers.authorization,project?.id)) {res.send({noauth:true,goto:'none'}); return;}
+
      if(!project) {res.send({goto:'none'})}
      else {
           let ownedProject = project.getOwnersProject(req.params.username)
@@ -407,6 +454,8 @@ app.get('/userRedirect/:scratchId/:username',(req,res)=>{
 // })
 
 app.get('/active/:blId',(req,res)=>{
+     if(!fullAuthenticate(req.headers.uname,req.headers.authorization,req.params.blId)) {res.send({noauth:true}); return;}
+
      let usernames = sessionManager.getProject(req.params.blId)?.session.getConnectedUsernames()
      let clients = sessionManager.getProject(req.params.blId)?.session.getConnectedUsersClients()
      if(usernames) {
@@ -424,25 +473,34 @@ app.get('/',(req,res)=>{
 })
 
 app.post('/friends/:user/:friend',(req,res)=>{
+     if(!authenticate(req.params.user,req.headers.authorization)) {res.send({noauth:true}); return;}
 
      userManager.befriend(req.params.user,req.params.friend)
      res.send('awwww :)')
 })
 app.delete('/friends/:user/:friend',(req,res)=>{
+     if(!authenticate(req.params.user,req.headers.authorization)) {res.send({noauth:true}); return;}
+
      userManager.unbefriend(req.params.user,req.params.friend)
      res.send('sadge moment :<(')
 
 })
 app.get('/friends/:user',(req,res)=>{
+     if(!authenticate(req.params.user,req.headers.authorization)) {res.send({noauth:true}); return;}
+
      res.send(userManager.getUser(req.params.user)?.friends)
 })
 
 // get list of blocklive id's shared TO user (from another user)
 app.get('/userProjects/:user',(req,res)=>{
+     if(!authenticate(req.params.user,req.headers.authorization)) {res.send({noauth:true}); return;}
+
      res.send(userManager.getShared(req.params.user))
 })
 // get list of scratch project info shared with user for displaying in mystuff
 app.get('/userProjectsScratch/:user',(req,res)=>{
+     if(!authenticate(req.params.user,req.headers.authorization)) {res.send({noauth:true}); return;}
+
      let blockliveIds = userManager.getAllProjects(req.params.user)
      let projectsList = blockliveIds.map(id=>{
           let projectObj = {}
@@ -461,21 +519,30 @@ app.get('/userProjectsScratch/:user',(req,res)=>{
      res.send(projectsList)
 })
 
-app.put('/leaveScratchId/:scratchId/:username',(req,res)=>{
+app.put('/leaveScratchId/:scratchId/:username',(req,res)=>{    
+     if(!authenticate(req.params.username,req.headers.authorization)) {res.send({noauth:true}); return;}
+     
      let project = sessionManager.getScratchToBLProject(req.params.scratchId)
      userManager.unShare(req.params.username, project.id)
      sessionManager.unshareProject(project.id, req.params.username)
      res.send('uncool beans!!!! /|/|/|')
 })
 app.put('/leaveBlId/:blId/:username',(req,res)=>{
+     if(!authenticate(req.params.username,req.headers.authorization)) {res.send({noauth:true}); return;}
+
      // let project = sessionManager.getScratchToBLProject(req.params.scratchId)
      userManager.unShare(req.params.username, req.params.blId)
      sessionManager.unshareProject(req.params.blId, req.params.username)
      res.send('uncool beans!!!! /|/|/|')
 })
+app.get('/verify/test',(req,res)=>{
+     res.send({verified:authenticate(req.query.username,req.headers.authorization)})
+})
 
 
 app.get('/share/:id',(req,res)=>{
+     if(!fullAuthenticate(req.headers.uname,req.headers.authorization,req.params.id)) {res.send({noauth:true}); return;} // todo fix in extension
+
      let project = sessionManager.getProject(req.params.id)
      let list = project?.sharedWith
      if(!list) {res.send('yeet yeet'); return;}
@@ -483,6 +550,8 @@ app.get('/share/:id',(req,res)=>{
      res.send(list ? [{username:project.owner,pk:userManager.getUser(project.owner).pk}].concat(list) : {err:'could not find blocklive project: ' + req.params.id} )
 })
 app.put('/share/:id/:to/:from',(req,res)=>{
+     if(!fullAuthenticate(req.params.from,req.headers.authorization,req.params.id)) {res.send({noauth:true}); return;}
+
      if(sessionManager.getProject(req.params.id)?.owner == req.params.to) {
           res.send('i lost all mah beans!!!!')
           return
@@ -493,6 +562,8 @@ app.put('/share/:id/:to/:from',(req,res)=>{
      res.send('cool beans ()()()')
 })
 app.put('/unshare/:id/:to/',(req,res)=>{
+     if(!fullAuthenticate(req.headers.uname,req.headers.authorization,req.params.id)) {res.send({noauth:true}); return;}
+
      if(sessionManager.getProject(req.params.id)?.owner == req.params.to) {
           res.send('you stole me beanz didnt u!!!?!?!?!?')
           return
@@ -502,6 +573,15 @@ app.put('/unshare/:id/:to/',(req,res)=>{
      res.send('uncool beans!!!! /|/|/|')
 })
 
+function fullAuthenticate(username,token,blId) {
+     if(bypassAuth) {return true}
+     let userAuth = authenticate(username,token)
+     let authAns = userAuth && sessionManager.canUserAccessProject(username,blId);
+     if(!authAns && userAuth) {
+          console.error(`🟪☔️ Project Authentication failed for user: ${username}, bltoken: ${token}, blId: ${blId}`)
+     }
+     return authAns
+}
 
 const port = 4000
 server.listen(port,'0.0.0.0');

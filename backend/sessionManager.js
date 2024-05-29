@@ -5,6 +5,7 @@ import sanitize from 'sanitize-filename';
 import { blocklivePath, lastIdPath, saveMapToFolder, saveMapToFolderAsync, scratchprojectsPath } from './filesave.js';
 import { Blob } from 'node:buffer'
 import { countRecent, countRecentRealtime, countRecentShared } from './recentUsers.js';
+import { getAuthProjStats } from './scratch-auth.js';
 
 const OFFLOAD_TIMEOUT_MILLIS = 45 * 1000 // you get two minutes before the project offloads
 
@@ -23,30 +24,29 @@ class BlockliveProject {
         return ret;
     }
 
-    toJSON() { // this function makes it so that the file writer doesnt save the change log. remove it to re-implement saving the change log
-        let ret = { ...this }
+    // toJSON() { // this function makes it so that the file writer doesnt save the change log. remove it to re-implement saving the change log
+    //     let ret = { ...this }
 
-        let n = 5; // trim changes on save
-        n = Math.min(n, ret.changes.length);
+    //     let n = 5; // trim changes on save
+    //     n = Math.min(n, ret.changes.length);
 
-        ret.indexZeroVersion += ret.changes.length - n;
-        ret.changes = ret.changes.slice(-n)
+    //     ret.indexZeroVersion += ret.changes.length - n;
+    //     ret.changes = ret.changes.slice(-n)
 
-        // if the changes list string is more than 20 mb, dont write changes
-        if (new Blob([JSON.stringify(ret.changes)]).size > 2e7) {
-            ret.indexZeroVersion += ret.changes.length
-            ret.changes = [];
-        }
+    //     // if the changes list string is more than 20 mb, dont write changes
+    //     if (new Blob([JSON.stringify(ret.changes)]).size > 2e7) {
+    //         ret.indexZeroVersion += ret.changes.length
+    //         ret.changes = [];
+    //     }
 
-        return ret;
-    }
+    //     return ret;
+    // }
 
 
     // projectJSON
     // projectJSONVersion = 0
     version = -1
     changes = []
-    indexZeroVersion = 0;
     lastTime = Date.now();
     lastUser = "";
     title;
@@ -80,7 +80,10 @@ class BlockliveProject {
     }
 
     getChangesSinceVersion(lastVersion) {
-        return this.changes.slice(Math.max(0, lastVersion - this.indexZeroVersion))
+        return this.changes.slice(Math.max(0, lastVersion - this.getIndexZeroVersion()))
+    }
+    getIndexZeroVersion() {
+        return this.version - this.changes.length + 1
     }
 
     // trim changes to lenght n
@@ -89,7 +92,7 @@ class BlockliveProject {
         if (!n) { n = 0 }
         n = Math.min(n, this.changes.length);
 
-        this.indexZeroVersion += this.changes.length - n;
+        // this.indexZeroVersion += this.changes.length - n;
         this.changes = this.changes.slice(-n)
         // LOL DONT
         // for(let i=0; i<this.version-1; i++) {
@@ -302,6 +305,12 @@ class ProjectWrapper {
 
     isSharedWith(username) {
         return username == this.owner || this.sharedWith.includes(username)
+    }
+    isSharedWithCaseless(username) {
+        username=String(username).toLowerCase()
+        let owner = String(this.owner).toLowerCase()
+        let sharedWithLowercase=this.sharedWith.map(un=>String(un).toLowerCase())
+        return username == owner || sharedWithLowercase.includes(username)
     }
 
     scratchSavedJSON(json, version) {
@@ -755,7 +764,14 @@ export default class SessionManager {
         stats.active24Hr = countRecent(1);
         stats.active1week = countRecent(7);
         stats.active30d = countRecent(30);
+
+        stats.auth = getAuthProjStats();
         return stats;
     }
 
+    canUserAccessProject(username,blId) {
+        let project = this.getProject(blId)
+        if(!project) {return true;}
+        return project.isSharedWithCaseless(username)
+    }
 }

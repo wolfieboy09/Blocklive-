@@ -2,23 +2,25 @@
 let uname = "*"
 let upk = undefined
 
-let apiUrl = 'https://spore.us.to:4000'
-// let apiUrl = 'http://localhost:4000'
+// let apiUrl = 'https://spore.us.to:4000'
+let apiUrl = 'http://localhost:4000'
 
 chrome.runtime.onInstalled.addListener((details)=>{
   if(details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
     chrome.tabs.create({url:'https://sites.google.com/catlin.edu/blocklive-quickstart-guide/home#h.lebe3qxxu5ou'})
   } else if (details.reason === chrome.runtime.OnInstalledReason.UPDATE) {
-    chrome.tabs.create({url:'https://sites.google.com/view/blocklive/new-blocklive-version'})
+    // chrome.tabs.create({url:'https://sites.google.com/view/blocklive/new-blocklive-version'})
     // chrome.tabs.create({url:'https://sites.google.com/catlin.edu/blocklive-quickstart-guide/new-blocklive-version'})
   }
 })
 
 
+const BLOCKLIVE={}
 async function backgroundScript() {
 
 importScripts('background/socket.io.js')
 importScripts('background/blockliveProject.js')
+importScripts('background/auth.js')
 
 // user info
 // let username = 'ilhp10'
@@ -60,6 +62,7 @@ async function handleNewProject(tab) {
     delete newProjects[tab.id]
     fetch(`${apiUrl}/linkScratch/${id}/${blId}/${uname}`,{
       method:"PUT",
+      headers:{authorization:currentBlToken}
     }) // link scratch project with api
     tabCallbacks[tab.id]({meta:'initBlocklive',blId}); // init blocklive in project tab
   }
@@ -73,7 +76,7 @@ async function prepRedirect(tab) {
 
   // dont redirect if is not /projects/id/...
   if(!id) { return false }
-  let info = await (await fetch(apiUrl + `/userRedirect/${id}/${uname}`)).json()
+  let info = await (await fetch(apiUrl + `/userRedirect/${id}/${uname}`,{headers:{authorization:currentBlToken}})).json()
   // dont redirect if scratch id is not associated with bl project
   if(info.goto == 'none') {return false}
   // dont redirect if already on project
@@ -114,7 +117,7 @@ socket.on('connect',async ()=>{
   console.log('connected with id: ',socket.id)
   ports.forEach(port=>port.postMessage({meta:'resync'}))
   let blIds = Object.keys(blockliveTabs) 
-  if(blIds.length != 0) {socket.send({type:'joinSessions',username:await makeSureUsernameExists(),pk:upk,ids:blIds})}
+  if(blIds.length != 0) {socket.send({type:'joinSessions',username:await makeSureUsernameExists(),pk:upk,ids:blIds,token:currentBlToken})}
 })
 socket.on('disconnect',()=>{
   setTimeout(
@@ -164,9 +167,22 @@ signedin = true;
 uname = json.user.username
 upk = json.user.id
 chrome.storage.local.set({uname,upk})
+await getCurrentBLTokenAfterUsernameRefresh?.()
+await testVerification()
 
 return uname
 }
+BLOCKLIVE.refreshUsername = refreshUsername;
+
+async function testVerification() {
+  try{
+  let json = await (await fetch(`${apiUrl}/verify/test?username=${uname}`,{headers:{authorization:currentBlToken}})).json()
+  if(!json.verified) {
+    storeBlockliveToken(uname,null,true)
+  }
+  }catch(e){console.error(e)}
+}
+
 async function makeSureUsernameExists() {
   if(uname == '*') {
     return refreshUsername()
@@ -228,7 +244,7 @@ chrome.runtime.onConnectExternal.addListener(function(port) {
       playChange(blIdd,msg,port)
 
       // send to websocket
-      socket.send({type:'projectChange',msg,blId:blIdd},(res)=>{
+      socket.send({type:'projectChange',msg,blId:blIdd,token:currentBlToken,username:uname},(res)=>{
         if(!!res) {
           port.postMessage({meta:'yourVersion',version:res})
         }
@@ -251,15 +267,15 @@ chrome.runtime.onConnectExternal.addListener(function(port) {
       }
     } else if (msg.meta == 'joinSession') {
       await makeSureUsernameExists()
-      socket.send({type:"joinSession",id:portIds[port.name],username:await makeSureUsernameExists(),pk:upk})
+      socket.send({type:"joinSession",id:portIds[port.name],username:await makeSureUsernameExists(),pk:upk,token:currentBlToken})
     } else if (msg.meta == 'setTitle') {
       playChange(blId,msg,port)
       // send to websocket
-      socket.send({type:'setTitle',blId,msg})
+      socket.send({type:'setTitle',blId,msg,token:currentBlToken,username:uname})
     } else if (msg.meta == 'chat') {
       playChange(blId,msg,port)
       // send to websocket
-      socket.send({type:'chat',blId,msg})
+      socket.send({type:'chat',blId,msg,token:currentBlToken})
     } else if(msg.meta=='chatnotif') {
       let tab = port.sender.tab;
       let notifs = (await chrome.storage.local.get(['notifs'])).notifs ?? false;
@@ -297,6 +313,7 @@ chrome.runtime.onConnectExternal.addListener(function(port) {
       
     } else {
       msg.blId = blId ?? msg.blId
+      msg.token = currentBlToken
       socket.send(msg)
     }
 
@@ -322,57 +339,63 @@ chrome.runtime.onMessageExternal.addListener(
     console.log("external message:", request);
     if(request.meta == 'getBlId') {
       if(!request.scratchId || request.scratchId == '.') {return ''}
-      sendResponse((await (await fetch(`${apiUrl}/blId/${request.scratchId}/${uname}`)).text()).replaceAll('"',''))
+      sendResponse((await (await fetch(`${apiUrl}/blId/${request.scratchId}/${uname}`,{headers:{authorization:currentBlToken}})).text()).replaceAll('"',''))
     // } else if(request.meta =='getInpoint') {
     //   sendResponse(await (await fetch(`${apiUrl}/projectInpoint/${request.blId}`)).json())
     } else if(request.meta =='getJson') {
       try{
-      sendResponse(await (await fetch(`${apiUrl}/projectJSON/${request.blId}`)).json())
+      sendResponse(await (await fetch(`${apiUrl}/projectJSON/${request.blId}?username=${uname}`,{headers:{authorization:currentBlToken}})).json())
     } catch(e) {sendResponse({err:'blocklive id does not exist'})}
     } else if(request.meta =='getChanges') {
-      sendResponse(await (await fetch(`${apiUrl}/changesSince/${request.blId}/${request.version}`)).json())
+      sendResponse(await (await fetch(`${apiUrl}/changesSince/${request.blId}/${request.version}`,{headers:{authorization:currentBlToken,uname}})).json())
     } else if(request.meta == 'getUsername') {
       sendResponse(uname)
+    } else if(request.meta == 'getUsernamePlus') {
+      sendResponse({uname,signedin,currentBlToken,apiUrl});
     } else if(request.meta == 'callback') {
       tabCallbacks[sender.tab.id] = sendResponse
     } else if(request.meta == 'projectSaved') {
       // {meta:'projectSaved',blId,scratchId,version:blVersion}
-      fetch(`${apiUrl}/projectSaved/${request.scratchId}/${request.version}`,{method:'POST'})
+      fetch(`${apiUrl}/projectSaved/${request.scratchId}/${request.version}`,{method:'POST',headers:{authorization:currentBlToken}})
     } else if(request.meta == 'projectSavedJSON') {
       // {meta:'projectSaved',blId,scratchId,version:blVersion}
-      fetch(`${apiUrl}/projectSavedJSON/${request.blId}/${request.version}`,{method:'POST',body:request.json,headers:{'Content-Type': 'application/json'}})
+      fetch(`${apiUrl}/projectSavedJSON/${request.blId}/${request.version}`,{method:'POST',body:request.json,headers:{'Content-Type': 'application/json',authorization:currentBlToken,uname}})
     } else if(request.meta == 'myStuff') {
-      sendResponse(await(await fetch(`${apiUrl}/userProjectsScratch/${await refreshUsername()}`)).json())
+      sendResponse(await(await fetch(`${apiUrl}/userProjectsScratch/${await refreshUsername()}`,{headers:{authorization:currentBlToken}})).json())
     } else if(request.meta == 'create') {
       // sendResponse(await(await fetch(`${apiUrl}/newProject/${request.scratchId}/${await refreshUsername()}?title=${encodeURIComponent(request.title)}`)).json())
       sendResponse(await(await fetch(`${apiUrl}/newProject/${request.scratchId}/${await refreshUsername()}?title=${encodeURIComponent(request.title)}`,
       {
         method:'POST',
         body:request.json,
-        headers:{'Content-Type': 'application/json'}
+        headers:{'Content-Type': 'application/json',authorization:currentBlToken}
       })).json())
     } else if(request.meta == 'shareWith') {
       fetch(`${apiUrl}/share/${request.id}/${request.username}/${uname}?pk=${request.pk}`,{
-        method:'PUT'
+        method:'PUT',
+        headers:{authorization:currentBlToken}
       })
     } else if(request.meta == 'unshareWith') {
       fetch(`${apiUrl}/unshare/${request.id}/${request.user}`,{
-        method:'PUT'
+        method:'PUT',
+        headers:{authorization:currentBlToken,uname}
       })
     } else if(request.meta == 'getShared') {
-      sendResponse(await(await fetch(`${apiUrl}/share/${request.id}`)).json())
+      sendResponse(await(await fetch(`${apiUrl}/share/${request.id}`,{headers:{authorization:currentBlToken,uname}})).json())
     } else if (request.meta == 'getTitle') {
-      sendResponse((await(await fetch(`${apiUrl}/projectTitle/${request.blId}`)).json()).title)
+      sendResponse((await(await fetch(`${apiUrl}/projectTitle/${request.blId}`,{headers:{authorization:currentBlToken,uname}})).json()).title)
     } else if(request.meta == 'leaveScratchId') {
       fetch(`${apiUrl}/leaveScratchId/${request.scratchId}/${await refreshUsername()}`,{
-        method:'PUT'
+        method:'PUT',
+        headers:{authorization:currentBlToken}
       })
     } else if(request.meta == 'leaveBlId') {
       fetch(`${apiUrl}/leaveBlId/${request.blId}/${await refreshUsername()}`,{
-        method:'PUT'
+        method:'PUT',
+        headers:{authorization:currentBlToken}
       })
     } else if(request.meta == 'getActive') {
-      sendResponse(await (await fetch(`${apiUrl}/active/${request.id}`)).json())
+      sendResponse(await (await fetch(`${apiUrl}/active/${request.id}`,{headers:{authorization:currentBlToken,uname}})).json())
     } else if(request.meta=='getPingUrl') {
       sendResponse(await chrome.runtime.getURL("sounds/ping.mp3"))
     } else if(request.meta=='isPingEnabled') {
@@ -385,7 +408,7 @@ chrome.runtime.onMessageExternal.addListener(
     if(request.meta == 'getUsername') {
       sendResponse(uname)
     } else if(request.meta == 'getUsernamePlus') {
-      sendResponse({uname,signedin})
+      sendResponse({uname,signedin,currentBlToken,apiUrl});
       refreshUsername()
     }
   })
