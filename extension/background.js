@@ -2,8 +2,8 @@
 let uname = "*"
 let upk = undefined
 
-// let apiUrl = 'https://spore.us.to:4000'
-let apiUrl = 'http://localhost:4000'
+let apiUrl = 'https://spore.us.to:4000'
+// let apiUrl = 'http://localhost:4000'
 
 chrome.runtime.onInstalled.addListener((details)=>{
   if(details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
