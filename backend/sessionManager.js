@@ -5,7 +5,7 @@ import sanitize from 'sanitize-filename';
 import { blocklivePath, lastIdPath, saveMapToFolder, saveMapToFolderAsync, scratchprojectsPath } from './filesave.js';
 import { Blob } from 'node:buffer'
 import { countRecent, countRecentRealtime, countRecentShared } from './recentUsers.js';
-import { getAuthProjStats } from './scratch-auth.js';
+import { getAuthStats } from './scratch-auth.js';
 
 const OFFLOAD_TIMEOUT_MILLIS = 45 * 1000 // you get two minutes before the project offloads
 
@@ -765,7 +765,7 @@ export default class SessionManager {
         stats.active1week = countRecent(7);
         stats.active30d = countRecent(30);
 
-        stats.auth = getAuthProjStats();
+        stats.auth = getAuthStats();
         return stats;
     }
 
