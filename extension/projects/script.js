@@ -1,13 +1,13 @@
 async function getProjects() {
-  res = await fetch("https://scratch.mit.edu/session/?blreferer", {
-    headers: {
-      "X-Requested-With": "XMLHttpRequest",
-    },
-  });
-  let json = await res.json();
+  let info = await chrome.runtime.sendMessage({meta:'getUsernamePlus'})
+  let apiUrl = info.apiUrl;
+  let blToken = info.token;
+  let uname = info.uname
+ 
   var data = await (
     await fetch(
-      `https://spore.us.to:4000/userProjectsScratch/${json.user.username}/`
+      `${apiUrl}/userProjectsScratch/${uname}/`,
+      {headers:{authorization:blToken}}
     )
   ).json();
   data.forEach(function (project) {
