@@ -58,6 +58,7 @@ export function setPaths(app,userManagerr,sessionManagerr) {
         
         try{
             let clientCode = req.query.code
+            if(!clientCode) {res.send({err:'no client code included'}); return}
             let tempCode = pendingMap[clientCode];
             if(!tempCode) {
                 res.send({err:'client code not found',clientCode});
