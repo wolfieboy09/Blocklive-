@@ -69,7 +69,6 @@ export async function saveMapToFolderAsync(obj, dir, failsafeEh) {
           } //max length is 524288
           if(failsafeEh) { // to speed up the saving process because we know that the actual save will write changes, and this is quick in case the server crashes
                if(contentsObject?.project?.changes) {
-                    console.log('removing changes in failsafe mode')
                     contentsObject = clone(contentsObject,false,2)
                     contentsObject.project.changes=[]
                     stringg = JSON.stringify(contentsObject)
