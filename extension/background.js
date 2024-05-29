@@ -173,6 +173,7 @@ await testVerification()
 return uname
 }
 BLOCKLIVE.refreshUsername = refreshUsername;
+let verifyBypass = false;
 
 async function testVerification() {
   try{
@@ -180,6 +181,8 @@ async function testVerification() {
   if(!json.verified) {
     storeBlockliveToken(uname,null,true)
   }
+  verifyBypass=json.bypass
+
   }catch(e){console.error(e)}
 }
 
@@ -351,7 +354,7 @@ chrome.runtime.onMessageExternal.addListener(
     } else if(request.meta == 'getUsername') {
       sendResponse(uname)
     } else if(request.meta == 'getUsernamePlus') {
-      sendResponse({uname,signedin,currentBlToken,apiUrl});
+      sendResponse({uname,signedin,currentBlToken,apiUrl,verifyBypass});
     } else if(request.meta == 'callback') {
       tabCallbacks[sender.tab.id] = sendResponse
     } else if(request.meta == 'projectSaved') {
@@ -408,7 +411,7 @@ chrome.runtime.onMessageExternal.addListener(
     if(request.meta == 'getUsername') {
       sendResponse(uname)
     } else if(request.meta == 'getUsernamePlus') {
-      sendResponse({uname,signedin,currentBlToken,apiUrl});
+      sendResponse({uname,signedin,currentBlToken,apiUrl,verifyBypass});
       refreshUsername()
     }
   })

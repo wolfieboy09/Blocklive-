@@ -52,11 +52,11 @@ import { Filter } from './profanity-filter.js';
 import { postText } from './discord-webhook.js';
 import { installCleaningJob } from './removeOldProjects.js';
 import { addRecent, countRecentShared, saveRecent } from './recentUsers.js';
-import { adminUser } from './secrets/secrets.js';
+import { admin, adminUser } from './secrets/secrets.js';
 import {setPaths, authenticate} from './scratch-auth.js';
 
 
-const restartMessage = 'An admin is restarting the blocklive server in 3 seconds... you may lose connection for an instant.'
+const restartMessage = 'The Blocklive server is restarting. You will lose connection for a few seconds.'
 // Load session and user manager objects
 
 
@@ -199,12 +199,19 @@ let messageHandlers = {
           })
      },
      'chat':(data,client)=>{
+          const BROADCAST_KEYWORD = 'toall '
 
-          let text = data.msg.msg.text
+          let text = String(data.msg.msg.text)
           let sender = data.msg.msg.sender
           let project = sessionManager.getProject(data.blId)
 
           if(!fullAuthenticate(sender,data.token,data.blId)) {client.send({noauth:true}); return;}
+          if(admin.includes(sender?.toLowerCase()) && text.startsWith(BROADCAST_KEYWORD)) {
+               let broadcast=text.slice(BROADCAST_KEYWORD.length)
+               console.log(`broadcasting message to all users: "${broadcast}" [${sender}]`)
+               postText(`broadcasting message to all users: "${broadcast}" [${sender}]`)
+               sessionManager.broadcastMessageToAllActiveProjects(`${broadcast}`)
+          }
 
           if(filter.isVulgar(text)) {
                let sentTo = project.session.getConnectedUsernames().filter(uname=>uname!=sender?.toLowerCase())
@@ -536,7 +543,7 @@ app.put('/leaveBlId/:blId/:username',(req,res)=>{
      res.send('uncool beans!!!! /|/|/|')
 })
 app.get('/verify/test',(req,res)=>{
-     res.send({verified:authenticate(req.query.username,req.headers.authorization)})
+     res.send({verified:authenticate(req.query.username,req.headers.authorization),bypass:bypassAuth})
 })
 
 
@@ -571,6 +578,9 @@ app.put('/unshare/:id/:to/',(req,res)=>{
      sessionManager.unshareProject(req.params.id, req.params.to)
      userManager.unShare(req.params.to, req.params.id)
      res.send('uncool beans!!!! /|/|/|')
+})
+app.get('/verify/bypass',(req,res)=>{
+     res.send(bypassAuth)
 })
 
 function fullAuthenticate(username,token,blId) {

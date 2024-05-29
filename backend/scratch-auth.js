@@ -95,7 +95,7 @@ async function checkComments() {
 
     // test if project is missing or comments turned off
     let projectJson = await (await fetch(`https://api.scratch.mit.edu/users/${projectUsername}/projects/${projectId}?rand=${Math.random()}`)).json();
-    if(projectJson.code || projectJson.comments_allowed===false) {
+    if(projectJson.code || projectJson.comments_allowed===false || projectJson.response=="Too many requests") {
         cachedComments = {code:'nocon'}
         console.log('project failed, info:',projectInfo)
         idIndex=(idIndex+1)%ids.projects.length  

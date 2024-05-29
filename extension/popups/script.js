@@ -90,7 +90,7 @@ setTimeout(()=>{chrome.runtime.sendMessage({meta:"getUsernamePlus"},setSignedin)
     });
     document.querySelector('#submit').onclick = ()=>{addFriend(document.querySelector('#searchh').value)}
 
-    if(!info.currentBlToken) {
+    if(!info.currentBlToken && !info.verifyBypass) {
         document.querySelector('#friends').innerHTML = `<div style="color:red; text-align:center; font-size: medium; padding:10px; justify-self:center;"><span style="background:white;">You're not verified with blocklive. <br> <br> To verify, ensure your account can comment and open scratch in a new tab for 10 seconds. <br><br> If you're still not verified, contact @ilhp10 or @rgantzos </span></div>`
     } else {
         // populate with current friends
