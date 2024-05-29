@@ -53,7 +53,7 @@ import { postText } from './discord-webhook.js';
 import { installCleaningJob } from './removeOldProjects.js';
 import { addRecent, countRecentShared, saveRecent } from './recentUsers.js';
 import { admin, adminUser } from './secrets/secrets.js';
-import {setPaths, authenticate} from './scratch-auth.js';
+import {setPaths, authenticate, freePassesPath, freePasses} from './scratch-auth.js';
 
 
 const restartMessage = 'The Blocklive server is restarting. You will lose connection for a few seconds.'
@@ -105,6 +105,7 @@ async function saveAsync() {
 
      console.log('saving now...')
      await fsp.writeFile(lastIdPath,(sessionManager.lastId).toString());
+     await fsp.writeFile(freePassesPath,JSON.stringify(freePasses))
      console.log('writing blocklives')
      await saveMapToFolderAsync(sessionManager.blocklive,blocklivePath,true);
      console.log('DONE writing blocklives')
@@ -120,6 +121,7 @@ async function finalSave() {
      isFinalSaving = true
      console.log('final saving...')
      fs.writeFileSync(lastIdPath,(sessionManager.lastId).toString());
+     fs.writeFileSync(freePassesPath,JSON.stringify(freePasses))
      sessionManager.finalSaveAllProjects(); // now they automatically offload
      saveMapToFolder(userManager.users,usersPath);
      await saveRecent();

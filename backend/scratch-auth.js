@@ -1,7 +1,8 @@
 
 import { bypassAuth } from "./index.js";
 import { ids } from "./secrets/secrets.js";
-
+import fs from 'fs'
+export const freePassesPath = 'storage/freePasses.json'
 
 let pendingMap = {} // publicAuthCode : clientSecret 
 
@@ -134,7 +135,9 @@ async function getVerificationComment(tempCode) {
 }
 
 
-let freePasses = {} // username : passtime
+// export let freePasses = {} // username : passtime
+
+export let freePasses = fs.existsSync(freePassesPath) ? JSON.parse(fs.readFileSync(freePassesPath)) : {}
 // grant temporary free verification to users if the blocklive server fails to verify
 export function grantFreePass(username) {
     console.error('granted free pass to user ' + username)
