@@ -445,7 +445,6 @@ app.get('/userRedirect/:scratchId/:username',(req,res)=>{
      let project = sessionManager.getScratchToBLProject(req.params.scratchId)
 
      if(!fullAuthenticate(req.params.username,req.headers.authorization,project?.id)) {res.send({noauth:true,goto:'none'}); return;}
-     if(!sessionManager.canUserAccessProject(req.params.username,project?.id)) {res.send({noauth:true,goto:'none',notshared:true}); return;} // todo remove
 
      if(!project) {res.send({goto:'none'})}
      else {
