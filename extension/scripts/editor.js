@@ -160,7 +160,7 @@ async function onTabLoad() {
     vm = reactInst.child.child.child.stateNode.props.vm;
     store = reactInst.child.child.child.stateNode.context.store
     addButtonInjectors()
-    blId = isNaN(parseFloat(location.pathname.split('/')[2])) ? '' : await getBlocklyId(scratchId);
+    blId = isNaN(parseFloat(location.pathname.split('/')[2])) ? '' : await getBlocklyId(scratchId); //todo: should this use the result of the getBlId function, or a more specific endpoint to authenticating project joining?
     if(!blId) {
         chrome.runtime.sendMessage(exId,{meta:'callback'},(request) => { if(request.meta == 'initBlocklive') { 
             blId = request.blId; 

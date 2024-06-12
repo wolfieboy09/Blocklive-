@@ -292,7 +292,8 @@ app.get('/blId/:scratchId/:uname',(req,res)=>{
           res.send(null); 
           return;
      }
-     let hasAccess = fullAuthenticate(req.params.uname,req.headers.authorization,blId)
+     // let hasAccess = fullAuthenticate(req.params.uname,req.headers.authorization,blId)
+     let hasAccess = project.isSharedWithCaseless(req.params.uname) // todo switch out
 
      res.send(hasAccess  ? blId : null);
 })
